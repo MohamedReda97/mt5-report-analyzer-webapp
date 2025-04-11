@@ -126,24 +126,25 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
           layout: {
             padding: {
               left: 0,
-              right: 0,
-              top: 0,
-              bottom: 0
+              right: 10,
+              top: 5,
+              bottom: 10
             }
           },
           scales: {
             x: {
               grid: {
-                color: 'rgba(255, 255, 255, 0.1)',
+                color: 'rgba(255, 255, 255, 0.05)',
                 lineWidth: 0.5
               },
               border: {
                 display: false
               },
               ticks: {
-                color: '#aaa',
+                color: 'rgba(255, 255, 255, 0.7)',
                 font: {
-                  size: 10
+                  size: 9,
+                  family: 'monospace'
                 },
                 // Type any is used to bypass the specific Chart.js typing issues
                 callback: function(this: any, tickValue: any, index: any, ticks: any) {
@@ -204,9 +205,13 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
   };
   
   return (
-    <Card className="p-4 bg-muted">
+    <Card className="p-4 bg-[#111827] border-none shadow-lg">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xl font-semibold text-orange-400">Metrics Summary</h2>
+      </div>
+      
       {/* Legend Section */}
-      <div className="flex justify-center mb-5 flex-wrap">
+      <div className="flex justify-center mb-3 flex-wrap">
         {reports.map(report => (
           <div
             key={report.fileName}
@@ -225,7 +230,7 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
       </div>
       
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 justify-items-center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-1 justify-items-center bg-[#111827] p-2 rounded-lg">
         {[
           "Net Profit", "Max DD", "Profit Factor", "EPO", 
           "Recovery Factor", "Sharpe Ratio", "Trades", "Win Rate", 
@@ -235,7 +240,7 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
           "Average position holding time", "Score"
         ].map(metric => (
           <div key={metric} className="metric-card">
-            <h3 className="text-sm">{formatMetricName(metric)}</h3>
+            <h3>{formatMetricName(metric)}</h3>
             <canvas id={`${metric.replace(/\s+/g, '_')}_${tabId}`} width="150" height="120"></canvas>
           </div>
         ))}
