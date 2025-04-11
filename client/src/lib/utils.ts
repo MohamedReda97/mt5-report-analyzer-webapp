@@ -36,19 +36,35 @@ export function formatMetricName(metric: string): string {
   return metric;
 }
 
-export function sanitizeMetricValue(metric: string, value: any): number {
+export function sanitizeMetricValue(metric: string, value: any): number | string {
   if (metric.includes("holding time")) {
-    // Convert time string to minutes for comparison
-    const timeStr = value || "0:0:0";
-    const parts = timeStr.split(':').map(Number);
-    return parts[0] * 60 + parts[1] + parts[2] / 60; // Hours to minutes + minutes + seconds/60
+    // For time-based metrics, return the original string format for the bar chart
+    if (typeof value === 'string' && value.includes(':')) {
+      return value; // Keep as string for processing in the chart
+    }
+    // Fallback for empty or non-string values
+    return "0:00:00";
   } else {
-    return parseFloat(value || 0);
+    // For numeric metrics, parse the value
+    return parseFloat((value !== undefined && value !== null) ? value : 0);
   }
 }
 
-export function formatMetricValue(metric: string, value: number): string {
+export function formatMetricValue(metric: string, value: number | string): string {
+  // Handle string values (typically time values)
+  if (typeof value === 'string') {
+    if (metric.includes("holding time")) {
+      return value; // Return original time format like "1:23:45"
+    }
+    // Try to convert to number for other metrics
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return value;
+    value = numValue;
+  }
+  
+  // Handle numeric values
   if (metric.includes("holding time")) {
+    // This should only happen if we have a numeric value for holding time
     const hours = Math.floor(value / 60);
     const mins = Math.floor(value % 60);
     return `${hours}h ${mins}m`;

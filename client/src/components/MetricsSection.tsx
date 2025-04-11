@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { formatMetricName, sanitizeMetricValue, formatMetricValue } from "@/lib/utils";
 import { ParsedReport } from "@shared/schema";
 import Chart from "chart.js/auto";
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 interface MetricsSectionProps {
   reports: ParsedReport[];
@@ -13,6 +14,9 @@ interface MetricsSectionProps {
 
 export default function MetricsSection({ reports, legendState, onToggleLegend, tabId }: MetricsSectionProps) {
   const chartsRef = useRef<Record<string, Chart>>({});
+  
+  // Register the datalabels plugin
+  Chart.register(ChartDataLabels);
   
   useEffect(() => {
     // Clean up charts when component unmounts
@@ -59,30 +63,96 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
       });
       const colors = filteredReports.map(report => report.color);
       
-      // Create new chart
+      // Process values for time-based metrics
+      const processedValues = values.map((value, index) => {
+        // For time-based metrics, convert HH:MM:SS to hours
+        if (typeof value === 'string' && value.includes(':') && 
+           (metric.includes("Maximal position holding time") || 
+            metric.includes("Average position holding time"))) {
+          const parts = value.split(':');
+          const hours = parseInt(parts[0] || '0');
+          const minutes = parseInt(parts[1] || '0');
+          const seconds = parseInt(parts[2] || '0');
+          return hours + minutes / 60 + seconds / 3600;
+        }
+        return value;
+      });
+
+      // Create new chart with bar format
       const newChart = new Chart(canvas, {
-        type: 'pie',
+        type: 'bar',
         data: {
-          labels: labels,
+          labels: labels.map(() => ''), // Empty labels for cleaner presentation
           datasets: [{
-            data: values,
+            data: processedValues,
             backgroundColor: colors,
-            borderWidth: 1
+            borderWidth: 1,
+            borderColor: colors.map(color => color + '80'), // Add transparency
+            barPercentage: 0.8,
+            categoryPercentage: 0.9
           }]
         },
         options: {
+          indexAxis: 'y', // Horizontal bar chart
           responsive: true,
           maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: {
+                display: false
+              },
+              display: false // Hide x-axis
+            },
+            y: {
+              grid: {
+                display: false
+              },
+              display: false // Hide y-axis
+            }
+          },
           plugins: {
             legend: {
               display: false
             },
+            datalabels: {
+              display: 'auto',
+              color: "#fff",
+              formatter: (value: any, context: any) => {
+                // For time-based metrics, convert back to HH:MM:SS
+                if (typeof value === 'number' && 
+                   (metric.includes("Maximal position holding time") || 
+                    metric.includes("Average position holding time"))) {
+                  const hours = Math.floor(value);
+                  const minutes = Math.floor((value - hours) * 60);
+                  const seconds = Math.floor(((value - hours) * 60 - minutes) * 60);
+                  return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+                return formatMetricValue(metric, value);
+              },
+              font: { weight: "bold", size: 12 },
+              anchor: 'end',
+              align: 'right',
+              offset: 5,
+              textAlign: 'right'
+            },
             tooltip: {
               callbacks: {
+                title: function(tooltipItems) {
+                  // Display file name as title
+                  return labels[tooltipItems[0].dataIndex];
+                },
                 label: function(context) {
-                  const label = context.label || '';
+                  // For time-based metrics display the original format
+                  if (metric.includes("Maximal position holding time") || 
+                      metric.includes("Average position holding time")) {
+                    const originalValue = filteredReports[context.dataIndex].metrics[metric];
+                    if (typeof originalValue === 'string') {
+                      return formatMetricName(metric) + ': ' + originalValue;
+                    }
+                  }
+                  
                   const value = context.raw as number;
-                  return `${label}: ${formatMetricValue(metric, value)}`;
+                  return formatMetricName(metric) + ': ' + formatMetricValue(metric, value);
                 }
               }
             }
