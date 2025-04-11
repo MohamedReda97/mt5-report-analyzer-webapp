@@ -184,7 +184,8 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           mode: 'nearest',
           axis: 'x',
           intersect: false
-        }
+        },
+        // Instead of using plugins to remove coordinates, we'll do it with custom CSS
       }
     });
   };

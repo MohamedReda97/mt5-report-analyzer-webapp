@@ -173,7 +173,26 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
             },
             // Disable datalabels for cleaner appearance matching the reference image
             datalabels: {
-              display: false
+              display: true,
+              align: 'end',
+              anchor: 'end',
+              color: 'rgba(255, 255, 255, 0.9)',
+              font: {
+                size: 12,
+                weight: 'bold'
+              },
+              formatter: function(value: any) {
+                // Round numbers to 1 decimal place and ensure no very long decimals
+                if (typeof value === 'number') {
+                  // Show integers without decimal places
+                  if (Number.isInteger(value)) {
+                    return value.toString();
+                  }
+                  // Round to 1 decimal place for non-integers
+                  return value.toFixed(1);
+                }
+                return value;
+              }
             },
             tooltip: {
               callbacks: {

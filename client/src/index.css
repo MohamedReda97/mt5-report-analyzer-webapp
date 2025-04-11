@@ -164,10 +164,10 @@
 }
 
 .metric-card {
-  background-color: #1a2235 !important; 
+  background-color: transparent !important; 
   border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   height: 130px; /* shorter */
   padding: 0 !important;
   margin: 3px !important;
@@ -183,6 +183,7 @@
   padding: 6px 0;
   font-size: 14px;
   border-radius: 0;
+  text-align: center;
 }
 
 .metric-card canvas {
@@ -190,7 +191,7 @@
   height: 94px !important; /* Adjusted to match the card's height minus header */
   max-width: 100%;
   padding: 4px 8px;
-  background-color: #1a2235; /* Match card background */
+  background-color: transparent;
 }
 
 .legend-item {
