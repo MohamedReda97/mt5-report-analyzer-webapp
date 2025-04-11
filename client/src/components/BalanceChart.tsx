@@ -174,7 +174,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         },
         elements: {
           point: {
-            radius: 0, // Remove point markers in line
+            radius: 4, // Remove point markers in line
             hoverRadius: 4 // Show points only on hover
           },
           line: {
