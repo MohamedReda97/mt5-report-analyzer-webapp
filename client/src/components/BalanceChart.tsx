@@ -37,10 +37,42 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
     }
     
     // Generate balance data for each report based on deals
+    const allTimePoints: string[] = [];
+    
+    // First pass: collect all time points from all reports
+    reports.forEach(report => {
+      const deals = report.deals || [];
+      deals.forEach(deal => {
+        if (deal.Time && !allTimePoints.includes(deal.Time)) {
+          allTimePoints.push(deal.Time);
+        }
+      });
+    });
+    
+    // Sort all time points chronologically
+    allTimePoints.sort((a, b) => {
+      const timeA = new Date(a).getTime();
+      const timeB = new Date(b).getTime();
+      return timeA - timeB;
+    });
+    
+    // If we don't have any time points, create some placeholder ones
+    if (allTimePoints.length < 2) {
+      const now = new Date();
+      for (let i = 0; i < 10; i++) {
+        const date = new Date();
+        date.setDate(now.getDate() - (10 - i));
+        allTimePoints.push(date.toISOString().split('T')[0]);
+      }
+    }
+    
+    // Generate datasets with proper time correlation
     const datasets = reports.map(report => {
-      // Generate balance data points from deals
+      const balanceMap: Record<string, number> = {};
       let balance = 10000; // Starting balance
-      const data: number[] = [balance];
+      
+      // Initialize with starting balance at first time point
+      balanceMap[allTimePoints[0]] = balance;
       
       // Sort deals by time
       const sortedDeals = [...(report.deals || [])].sort((a, b) => {
@@ -49,20 +81,29 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         return timeA - timeB;
       });
       
+      // Process each deal to update balance
       sortedDeals.forEach(deal => {
-        if (deal.Profit) {
+        if (deal.Time && deal.Profit) {
           balance += parseFloat(deal.Profit.toString());
-          data.push(balance);
+          balanceMap[deal.Time] = balance;
         }
       });
       
-      // If no deals or insufficient data, create sample data
-      if (data.length < 2) {
-        for (let i = 0; i < 10; i++) {
-          balance += (Math.random() * 200) - 100;
-          data.push(balance);
-        }
+      // Fill in balance values for all time points
+      let lastBalance = 10000; // Default starting balance
+      
+      // Pre-process to ensure we have an initial value
+      if (Object.keys(balanceMap).length === 0) {
+        balanceMap[allTimePoints[0]] = lastBalance;
       }
+      
+      // Map through all timepoints and create a consistent dataset
+      const data: number[] = allTimePoints.map(timePoint => {
+        if (balanceMap[timePoint] !== undefined) {
+          lastBalance = balanceMap[timePoint];
+        }
+        return lastBalance;
+      });
       
       return {
         label: report.fileName.replace('.html', ''),
@@ -75,9 +116,15 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
       };
     });
     
-    // Create labels (dates or sequential numbers)
-    const maxDataPoints = Math.max(...datasets.map(d => d.data.length));
-    const labels = Array.from({ length: maxDataPoints }, (_, i) => `Day ${i + 1}`);
+    // Format dates for display
+    const labels = allTimePoints.map(timePoint => {
+      try {
+        const date = new Date(timePoint);
+        return date.toLocaleDateString();
+      } catch (e) {
+        return timePoint;
+      }
+    });
     
     // Create chart
     chartRef.current = new Chart(canvasRef.current, {
@@ -91,22 +138,35 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         maintainAspectRatio: false,
         scales: {
           x: {
+            title: {
+              display: true,
+              text: 'Time',
+              color: '#aaa'
+            },
             grid: {
               color: '#444'
             },
             ticks: {
-              maxRotation: 0,
+              maxRotation: 45,
               autoSkip: true,
-              maxTicksLimit: 10,
+              maxTicksLimit: 15,
               color: '#aaa'
             }
           },
           y: {
+            title: {
+              display: true,
+              text: 'Balance',
+              color: '#aaa'
+            },
             grid: {
               color: '#444'
             },
             ticks: {
-              color: '#aaa'
+              color: '#aaa',
+              callback: function(value: any) {
+                return '$' + value.toLocaleString();
+              }
             }
           }
         },
@@ -119,7 +179,28 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           },
           tooltip: {
             mode: 'index',
-            intersect: false
+            intersect: false,
+            callbacks: {
+              title: function(tooltipItems: any[]) {
+                if (tooltipItems.length > 0) {
+                  return 'Date: ' + tooltipItems[0].label;
+                }
+                return '';
+              },
+              label: function(context: any) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.y !== null) {
+                  label += '$' + context.parsed.y.toLocaleString('en-US', { 
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  });
+                }
+                return label;
+              }
+            }
           }
         },
         interaction: {
