@@ -12,13 +12,24 @@ interface DealsTableProps {
 
 export default function DealsTable({ reports, tabId }: DealsTableProps) {
   const [activeReportIndex, setActiveReportIndex] = useState(0);
+  const [filteredProfit, setFilteredProfit] = useState(0);
   
   // Define columns for the grid
   const columnDefs = [
     { field: 'Time', filter: true, sortable: true },
-    { field: 'Deal', filter: true, sortable: true },
+    { 
+      field: 'Deal', 
+      filter: true, 
+      sortable: true,
+      valueParser: (params: any) => Number(params.newValue),
+      comparator: (valueA: number, valueB: number) => valueA - valueB
+    },
     { field: 'Symbol', filter: true, sortable: true },
-    { field: 'Type', filter: true, sortable: true },
+    { 
+      field: 'Type', 
+      filter: 'agSetColumnFilter',
+      sortable: true
+    },
     { field: 'Direction', filter: true, sortable: true },
     { field: 'Volume', filter: true, sortable: true },
     { field: 'Price', filter: true, sortable: true },
@@ -72,19 +83,30 @@ export default function DealsTable({ reports, tabId }: DealsTableProps) {
       </div>
       
       {/* Grid container */}
-      <div
-        className="ag-theme-alpine-dark w-full h-[500px]"
-      >
+      <div className="ag-theme-alpine-dark w-full h-[500px] overflow-auto">
         <AgGridReact
           rowData={currentDeals}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
-          pagination={true}
-          paginationPageSize={10}
-          domLayout={'autoHeight'}
+          pagination={false}
+          domLayout="normal"
           modules={[ClientSideRowModelModule]}
+          onFilterChanged={(params) => {
+            const filteredRows = params.api.getModel().getRowCount();
+            const profitSum = params.api.getModel().rowsToDisplay.reduce((sum, row) => {
+              return sum + (parseFloat(row.data.Profit) || 0);
+            }, 0);
+            setFilteredProfit(profitSum);
+          }}
         />
       </div>
+      {filteredProfit !== 0 && (
+        <div className="mt-2 text-right pr-4">
+          Filtered Profit Sum: <span className={filteredProfit >= 0 ? 'text-green-500' : 'text-red-500'}>
+            {filteredProfit.toFixed(2)}
+          </span>
+        </div>
+      )}
     </Card>
   );
 }

@@ -184,12 +184,6 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           mode: 'nearest',
           axis: 'x',
           intersect: false
-        },
-        plugins: {
-          tooltip: {
-            enabled: true,
-            displayStates: { visible: false } // Hide coordinate display
-          }
         }
       }
     });

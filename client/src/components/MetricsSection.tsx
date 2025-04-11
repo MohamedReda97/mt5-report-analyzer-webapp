@@ -171,20 +171,18 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
             legend: {
               display: false
             },
-            // Disable datalabels for cleaner appearance matching the reference image
             datalabels: {
               display: true,
-              align: 'end',
-              anchor: 'end',
+              align: 'center',
+              anchor: 'center',
               color: 'rgba(255, 255, 255, 0.9)',
               font: {
-                size: 14, // Increased font size for better visibility
+                size: 14,
                 weight: 'bold'
               },
               formatter: function(value: any) {
-                // Round numbers to 1 decimal place and ensure no very long decimals
                 if (typeof value === 'number') {
-                  return value.toFixed(1); // Round to one decimal place
+                  return Math.abs(value) < 0.01 ? value.toExponential(2) : value.toFixed(1);
                 }
                 return value;
               }
