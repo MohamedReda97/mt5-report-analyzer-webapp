@@ -36,101 +36,44 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
       chartRef.current.destroy();
     }
     
-    // Generate balance data for each report based on deals
-    const allTimePoints: string[] = [];
-    
-    // First pass: collect all time points from all reports
-    reports.forEach(report => {
-      const deals = report.deals || [];
-      deals.forEach(deal => {
-        if (deal.Time && !allTimePoints.includes(deal.Time)) {
-          allTimePoints.push(deal.Time);
-        }
-      });
-    });
-    
-    // Sort all time points chronologically
-    allTimePoints.sort((a, b) => {
-      const timeA = new Date(a).getTime();
-      const timeB = new Date(b).getTime();
-      return timeA - timeB;
-    });
-    
-    // If we don't have any time points, create some placeholder ones
-    if (allTimePoints.length < 2) {
-      const now = new Date();
-      for (let i = 0; i < 10; i++) {
-        const date = new Date();
-        date.setDate(now.getDate() - (10 - i));
-        allTimePoints.push(date.toISOString().split('T')[0]);
-      }
-    }
-    
-    // Generate datasets with proper time correlation
+    // Generate datasets directly from deal numbers and balances
     const datasets = reports.map(report => {
-      const balanceMap: Record<string, number> = {};
-      let balance = 10000; // Starting balance
+      // Filter deals that have both Deal number and Balance
+      const validDeals = (report.deals || [])
+        .filter(deal => deal.Deal && deal.Balance)
+        .slice(1); // Skip the first deal (consistent with original code)
       
-      // Initialize with starting balance at first time point
-      balanceMap[allTimePoints[0]] = balance;
-      
-      // Sort deals by time
-      const sortedDeals = [...(report.deals || [])].sort((a, b) => {
-        const timeA = new Date(a.Time).getTime();
-        const timeB = new Date(b.Time).getTime();
-        return timeA - timeB;
+      // Sort deals by deal number
+      const sortedDeals = [...validDeals].sort((a, b) => {
+        const dealA = parseInt(a.Deal.toString());
+        const dealB = parseInt(b.Deal.toString());
+        return dealA - dealB;
       });
       
-      // Process each deal to update balance
-      sortedDeals.forEach(deal => {
-        if (deal.Time && deal.Profit) {
-          balance += parseFloat(deal.Profit.toString());
-          balanceMap[deal.Time] = balance;
-        }
-      });
+      // Create data points with x: deal number, y: balance
+      const dataPoints = sortedDeals.map(deal => ({
+        x: parseInt(deal.Deal.toString()),
+        y: typeof deal.Balance === "string" 
+          ? parseFloat(deal.Balance.replace(/\s/g, "")) 
+          : parseFloat(deal.Balance.toString())
+      }));
       
-      // Fill in balance values for all time points
-      let lastBalance = 10000; // Default starting balance
-      
-      // Pre-process to ensure we have an initial value
-      if (Object.keys(balanceMap).length === 0) {
-        balanceMap[allTimePoints[0]] = lastBalance;
-      }
-      
-      // Map through all timepoints and create a consistent dataset
-      const data: number[] = allTimePoints.map(timePoint => {
-        if (balanceMap[timePoint] !== undefined) {
-          lastBalance = balanceMap[timePoint];
-        }
-        return lastBalance;
-      });
-      
+      // Create dataset for the chart
       return {
         label: report.fileName.replace('.html', ''),
-        data: data,
+        data: dataPoints,
         borderColor: report.color,
-        backgroundColor: `${report.color}33`, // Add transparency
+        backgroundColor: "rgba(0,0,0,0)",
         borderWidth: 2,
-        tension: 0.3,
+        tension: 0.4,
         fill: false
       };
-    });
-    
-    // Format dates for display
-    const labels = allTimePoints.map(timePoint => {
-      try {
-        const date = new Date(timePoint);
-        return date.toLocaleDateString();
-      } catch (e) {
-        return timePoint;
-      }
     });
     
     // Create chart
     chartRef.current = new Chart(canvasRef.current, {
       type: 'line',
       data: {
-        labels: labels,
         datasets: datasets
       },
       options: {
@@ -138,18 +81,16 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         maintainAspectRatio: false,
         scales: {
           x: {
+            type: 'linear',
             title: {
               display: true,
-              text: 'Time',
+              text: 'Deal Number',
               color: '#aaa'
             },
             grid: {
-              color: '#444'
+              color: 'rgba(255, 255, 255, 0.1)'
             },
             ticks: {
-              maxRotation: 45,
-              autoSkip: true,
-              maxTicksLimit: 15,
               color: '#aaa'
             }
           },
@@ -160,7 +101,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
               color: '#aaa'
             },
             grid: {
-              color: '#444'
+              color: 'rgba(255, 255, 255, 0.1)'
             },
             ticks: {
               color: '#aaa',
@@ -182,8 +123,8 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
             intersect: false,
             callbacks: {
               title: function(tooltipItems: any[]) {
-                if (tooltipItems.length > 0) {
-                  return 'Date: ' + tooltipItems[0].label;
+                if (tooltipItems.length > 0 && tooltipItems[0].parsed.x) {
+                  return 'Deal #: ' + tooltipItems[0].parsed.x;
                 }
                 return '';
               },
