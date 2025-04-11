@@ -220,3 +220,19 @@
 .file-upload-zone.drag-over {
   @apply bg-accent border-primary;
 }
+
+/* Hide chart.js coordinate display in the corner */
+canvas {
+  position: relative;
+}
+
+canvas::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 100px;
+  height: 30px;
+  background-color: #111827;
+  z-index: 10;
+}
