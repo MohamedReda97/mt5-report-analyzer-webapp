@@ -5,14 +5,31 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Keep track of used colors to ensure no duplicates
+const usedColors = new Set<string>();
+
 export function getRandomColor() {
   const colors = [
-    '#4285F4', '#EA4335', '#FBBC05', '#34A853', // Google colors
-    '#FF5722', '#9C27B0', '#3F51B5', '#009688', // Material colors
-    '#795548', '#607D8B', '#E91E63', '#00BCD4',
-    '#FFC107', '#8BC34A', '#CDDC39', '#FF9800'
+    '#f59e0b', '#10b981', '#3b82f6', '#ef4444', // Primary colors (yellow, green, blue, red)
+    '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', // Secondary (purple, pink, teal, orange)
+    '#a3e635', '#6366f1', '#fcd34d', '#64748b', // Tertiary (lime, indigo, amber, slate)
+    '#22d3ee', '#f43f5e', '#0ea5e9', '#84cc16'  // Accent (cyan, rose, sky, lime)
   ];
-  return colors[Math.floor(Math.random() * colors.length)];
+  
+  // If all colors used, reset
+  if (usedColors.size >= colors.length) {
+    usedColors.clear();
+  }
+  
+  // Find an unused color
+  let color: string;
+  do {
+    color = colors[Math.floor(Math.random() * colors.length)];
+  } while (usedColors.has(color));
+  
+  // Mark as used
+  usedColors.add(color);
+  return color;
 }
 
 export function formatMetricName(metric: string): string {

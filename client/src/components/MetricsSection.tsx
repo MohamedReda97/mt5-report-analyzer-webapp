@@ -115,8 +115,9 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
             data: processedValues.map(val => typeof val === 'string' ? 0 : val),
             backgroundColor: colors,
             borderWidth: 0,
-            barPercentage: 0.6,
-            categoryPercentage: 0.8
+            barPercentage: 0.75, /* Wider bars */
+            categoryPercentage: 0.9, /* More space taken by bars */
+            borderRadius: 2
           }]
         },
         options: {
@@ -205,13 +206,9 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
   };
   
   return (
-    <Card className="p-4 bg-[#111827] border-none shadow-lg">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xl font-semibold text-orange-400">Metrics Summary</h2>
-      </div>
-      
+    <Card className="p-4 border-none shadow-lg">
       {/* Legend Section */}
-      <div className="flex justify-center mb-3 flex-wrap">
+      <div className="flex justify-center mb-4 flex-wrap">
         {reports.map(report => (
           <div
             key={report.fileName}
@@ -230,7 +227,7 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
       </div>
       
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-1 justify-items-center bg-[#111827] p-2 rounded-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-1 justify-items-center p-2 rounded-lg">
         {[
           "Net Profit", "Max DD", "Profit Factor", "EPO", 
           "Recovery Factor", "Sharpe Ratio", "Trades", "Win Rate", 

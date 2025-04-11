@@ -190,11 +190,8 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
   };
   
   return (
-    <Card className="p-4 bg-[#111827] border-none shadow-lg h-[580px]">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xl font-semibold text-orange-400">Balance Chart</h2>
-      </div>
-      <div className="w-full h-[calc(100%-2rem)]">
+    <Card className="p-4 border-none shadow-lg h-[580px]">
+      <div className="w-full h-full">
         <canvas id={`balanceChart_${tabId}`} className="w-full h-full"></canvas>
       </div>
     </Card>
