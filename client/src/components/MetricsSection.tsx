@@ -78,62 +78,100 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
         return value;
       });
 
-      // Create new chart with bar format
+      // Process values to ensure they're all numbers
+      const numericValues = processedValues.map(v => typeof v === 'string' ? 0 : v);
+      
+      // Determine min and max values for x-axis scaling based on the metric
+      const maxValue = Math.max(...numericValues, 0.1);
+      const minValue = Math.min(...numericValues, 0) < 0 ? Math.min(...numericValues) : 0;
+
+      // Calculate reasonable tick values based on the data range
+      const range = maxValue - minValue;
+      let tickStep = range / 5;
+      
+      // Round the tickStep to a sensible value (handle zero or very small values)
+      const magnitude = tickStep > 0 
+        ? Math.pow(10, Math.floor(Math.log10(tickStep))) 
+        : 0.1;
+      
+      tickStep = tickStep > 0 
+        ? Math.ceil(tickStep / magnitude) * magnitude 
+        : 0.5;
+      
+      // Generate ticks
+      const ticks = [];
+      let currentTick = minValue;
+      while (currentTick <= maxValue) {
+        ticks.push(currentTick);
+        currentTick += tickStep;
+      }
+      
+      // Create new chart with horizontal bar format
       const newChart = new Chart(canvas, {
         type: 'bar',
         data: {
-          labels: labels.map(() => ''), // Empty labels for cleaner presentation
+          labels: labels,
           datasets: [{
-            data: processedValues,
+            data: processedValues.map(val => typeof val === 'string' ? 0 : val),
             backgroundColor: colors,
-            borderWidth: 1,
-            borderColor: colors.map(color => color + '80'), // Add transparency
-            barPercentage: 0.8,
-            categoryPercentage: 0.9
+            borderWidth: 0,
+            barPercentage: 0.6,
+            categoryPercentage: 0.8
           }]
         },
         options: {
           indexAxis: 'y', // Horizontal bar chart
           responsive: true,
           maintainAspectRatio: false,
+          layout: {
+            padding: {
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0
+            }
+          },
           scales: {
             x: {
               grid: {
+                color: 'rgba(255, 255, 255, 0.1)',
+                lineWidth: 0.5
+              },
+              border: {
                 display: false
               },
-              display: false // Hide x-axis
+              ticks: {
+                color: '#aaa',
+                font: {
+                  size: 10
+                },
+                // Type any is used to bypass the specific Chart.js typing issues
+                callback: function(this: any, tickValue: any, index: any, ticks: any) {
+                  // Ensure we have a number
+                  const value = Number(tickValue);
+                  
+                  // Format the tick values for better readability
+                  if (!isNaN(value) && Math.abs(value) >= 1000) {
+                    return (value / 1000).toLocaleString() + 'k';
+                  }
+                  return tickValue.toString();
+                },
+                maxRotation: 0
+              },
+              min: minValue,
+              max: maxValue + (maxValue - minValue) * 0.1 // Add some padding
             },
             y: {
-              grid: {
-                display: false
-              },
-              display: false // Hide y-axis
+              display: false // Hide y-axis as we're using the title for this
             }
           },
           plugins: {
             legend: {
               display: false
             },
+            // Disable datalabels for cleaner appearance matching the reference image
             datalabels: {
-              display: 'auto',
-              color: "#fff",
-              formatter: (value: any, context: any) => {
-                // For time-based metrics, convert back to HH:MM:SS
-                if (typeof value === 'number' && 
-                   (metric.includes("Maximal position holding time") || 
-                    metric.includes("Average position holding time"))) {
-                  const hours = Math.floor(value);
-                  const minutes = Math.floor((value - hours) * 60);
-                  const seconds = Math.floor(((value - hours) * 60 - minutes) * 60);
-                  return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                }
-                return formatMetricValue(metric, value);
-              },
-              font: { weight: "bold", size: 12 },
-              anchor: 'end',
-              align: 'right',
-              offset: 5,
-              textAlign: 'right'
+              display: false
             },
             tooltip: {
               callbacks: {
@@ -151,7 +189,7 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
                     }
                   }
                   
-                  const value = context.raw as number;
+                  const value = context.parsed.x;
                   return formatMetricName(metric) + ': ' + formatMetricValue(metric, value);
                 }
               }
@@ -187,17 +225,18 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
       </div>
       
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 justify-items-center">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 justify-items-center">
         {[
-          "Net Profit", "Max DD", "Profit Factor", "EPO", "Recovery Factor", 
-          "Sharpe Ratio", "Trades", "Win Rate", "Z-Score", "AvgP", "AvgL", 
-          "Short Trades (won %) Count", "Short Trades (won %) Percentage", 
-          "Long Trades (won %) Count", "Long Trades (won %) Percentage", 
-          "Maximal position holding time", "Average position holding time", "Score"
+          "Net Profit", "Max DD", "Profit Factor", "EPO", 
+          "Recovery Factor", "Sharpe Ratio", "Trades", "Win Rate", 
+          "Z-Score", "AvgP", "AvgL", "Short Trades (won %) Count", 
+          "Short Trades (won %) Percentage", "Long Trades (won %) Count", 
+          "Long Trades (won %) Percentage", "Maximal position holding time", 
+          "Average position holding time", "Score"
         ].map(metric => (
-          <div key={metric} className="metric-card bg-secondary p-2 rounded-lg text-center w-[172px]">
-            <h3 className="text-sm font-semibold mb-1">{formatMetricName(metric)}</h3>
-            <canvas id={`${metric.replace(/\s+/g, '_')}_${tabId}`} width="150" height="150"></canvas>
+          <div key={metric} className="metric-card">
+            <h3 className="text-sm">{formatMetricName(metric)}</h3>
+            <canvas id={`${metric.replace(/\s+/g, '_')}_${tabId}`} width="150" height="120"></canvas>
           </div>
         ))}
       </div>

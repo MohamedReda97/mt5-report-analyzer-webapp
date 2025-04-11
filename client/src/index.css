@@ -163,24 +163,52 @@
   font-weight: bold;
 }
 
+.metric-card {
+  background-color: #303030 !important;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  height: 150px;
+  padding: 0 !important;
+}
+
+.metric-card h3 {
+  color: white;
+  font-weight: 500;
+  margin-bottom: 0;
+  background-color: #3a3a3a;
+  padding: 4px 0;
+  border-radius: 0;
+}
+
 .metric-card canvas {
   width: 150px !important;
-  height: 150px !important;
+  height: 120px !important;
   max-width: 100%;
+  padding: 8px;
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  margin-right: 20px;
+  margin: 0 10px 10px 0;
   cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  background-color: rgba(50, 50, 50, 0.3);
+}
+
+.legend-item:hover {
+  background-color: rgba(70, 70, 70, 0.5);
 }
 
 .legend-color {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
   display: inline-block;
-  margin-right: 10px;
+  margin-right: 8px;
 }
 
 .file-upload-zone.drag-over {
