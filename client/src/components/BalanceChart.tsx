@@ -11,15 +11,15 @@ interface BalanceChartProps {
 export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
   const chartRef = useRef<Chart | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  
+
   useEffect(() => {
     // Set up canvas reference
     canvasRef.current = document.getElementById(`balanceChart_${tabId}`) as HTMLCanvasElement;
     if (!canvasRef.current) return;
-    
+
     // Create chart
     createBalanceChart();
-    
+
     // Clean up
     return () => {
       if (chartRef.current) {
@@ -27,29 +27,29 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
       }
     };
   }, [reports]);
-  
+
   const createBalanceChart = () => {
     if (!canvasRef.current || reports.length === 0) return;
-    
+
     // Destroy existing chart if it exists
     if (chartRef.current) {
       chartRef.current.destroy();
     }
-    
+
     // Generate datasets directly from deal numbers and balances
     const datasets = reports.map(report => {
       // Filter deals that have both Deal number and Balance
       const validDeals = (report.deals || [])
         .filter(deal => deal.Deal && deal.Balance)
         .slice(1); // Skip the first deal (consistent with original code)
-      
+
       // Sort deals by deal number
       const sortedDeals = [...validDeals].sort((a, b) => {
         const dealA = parseInt(a.Deal.toString());
         const dealB = parseInt(b.Deal.toString());
         return dealA - dealB;
       });
-      
+
       // Create data points with x: deal number, y: balance
       const dataPoints = sortedDeals.map(deal => ({
         x: parseInt(deal.Deal.toString()),
@@ -57,7 +57,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           ? parseFloat(deal.Balance.replace(/\s/g, "")) 
           : parseFloat(deal.Balance.toString())
       }));
-      
+
       // Create dataset for the chart
       return {
         label: report.fileName.replace('.html', ''),
@@ -69,7 +69,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         fill: false
       };
     });
-    
+
     // Create chart
     chartRef.current = new Chart(canvasRef.current, {
       type: 'line',
@@ -83,7 +83,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           x: {
             type: 'linear',
             title: {
-              display: false, // Hide title to match reference image
+              display: false,
               text: 'Deal Number',
               color: 'rgba(255, 255, 255, 0.7)'
             },
@@ -104,7 +104,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           },
           y: {
             title: {
-              display: false, // Hide title to match reference image
+              display: false,
               text: 'Balance',
               color: 'rgba(255, 255, 255, 0.7)'
             },
@@ -162,8 +162,8 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
                 }
                 if (context.parsed.y !== null) {
                   label += '$' + context.parsed.y.toLocaleString('en-US', { 
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
+                    minimumFractionDigits: 0, // Round to whole numbers
+                    maximumFractionDigits: 0
                   });
                 }
                 return label;
@@ -185,11 +185,16 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           axis: 'x',
           intersect: false
         },
-        // Instead of using plugins to remove coordinates, we'll do it with custom CSS
+        plugins: {
+          tooltip: {
+            enabled: true,
+            displayStates: { visible: false } // Hide coordinate display
+          }
+        }
       }
     });
   };
-  
+
   return (
     <Card className="p-4 border-none shadow-lg h-[580px]">
       <div className="w-full h-full">
