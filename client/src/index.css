@@ -164,8 +164,9 @@
 }
 
 .metric-card canvas {
-  width: 180px;
-  height: 180px;
+  width: 150px !important;
+  height: 150px !important;
+  max-width: 100%;
 }
 
 .legend-item {

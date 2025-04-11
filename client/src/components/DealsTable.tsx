@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ParsedReport } from "@shared/schema";
 import { AgGridReact } from "ag-grid-react";
+import { ClientSideRowModelModule } from "ag-grid-community";
 
 interface DealsTableProps {
   reports: ParsedReport[];
@@ -81,6 +82,7 @@ export default function DealsTable({ reports, tabId }: DealsTableProps) {
           pagination={true}
           paginationPageSize={10}
           domLayout={'autoHeight'}
+          modules={[ClientSideRowModelModule]}
         />
       </div>
     </Card>

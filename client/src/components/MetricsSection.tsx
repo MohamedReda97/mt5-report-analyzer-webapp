@@ -127,7 +127,7 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
         ].map(metric => (
           <div key={metric} className="metric-card bg-secondary p-2 rounded-lg text-center w-[172px]">
             <h3 className="text-sm font-semibold mb-1">{formatMetricName(metric)}</h3>
-            <canvas id={`${metric.replace(/\s+/g, '_')}_${tabId}`} width="180" height="180"></canvas>
+            <canvas id={`${metric.replace(/\s+/g, '_')}_${tabId}`} width="150" height="150"></canvas>
           </div>
         ))}
       </div>
