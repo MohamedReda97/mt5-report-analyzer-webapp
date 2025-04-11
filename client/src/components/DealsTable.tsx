@@ -28,7 +28,10 @@ export default function DealsTable({ reports, tabId }: DealsTableProps) {
     { 
       field: 'Type', 
       filter: 'agSetColumnFilter',
-      sortable: true
+      sortable: true,
+      filterParams: {
+        buttons: ['apply', 'reset']
+      }
     },
     { field: 'Direction', filter: true, sortable: true },
     { field: 'Volume', filter: true, sortable: true },

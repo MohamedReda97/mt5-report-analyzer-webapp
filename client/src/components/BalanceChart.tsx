@@ -76,6 +76,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
       data: {
         datasets: datasets
       },
+      animation: false,
       options: {
         responsive: true,
         maintainAspectRatio: false,

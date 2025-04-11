@@ -182,7 +182,7 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
               },
               formatter: function(value: any) {
                 if (typeof value === 'number') {
-                  return Math.abs(value) < 0.01 ? value.toExponential(2) : value.toFixed(1);
+                  return Math.abs(value) < 0.01 ? value.toExponential(2) : value.toFixed(2);
                 }
                 return value;
               }
