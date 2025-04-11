@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground scrollbar-thin scrollbar-thumb-primary scrollbar-track-gray-800;
+  }
+  
+  html, body, #root {
+    @apply h-full;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thumb-primary::-webkit-scrollbar-thumb {
+    background-color: hsl(36, 100%, 50%);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-track-gray-800::-webkit-scrollbar-track {
+    background-color: #333;
+  }
+  
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+:root {
+  --background: 232 27% 15%;
+  --foreground: 0 0% 100%;
+  --card: 229 22% 21%;
+  --card-foreground: 0 0% 100%;
+  --popover: 229 22% 21%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 36 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 222 26% 24%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 223 16% 24%;
+  --muted-foreground: 215 14% 65%;
+  --accent: 219 29% 26%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 223 16% 27%;
+  --input: 223 16% 24%;
+  --ring: 36 100% 50%;
+  --chart-1: 210 100% 60%;
+  --chart-2: 339 100% 60%;
+  --chart-3: 159 100% 60%;
+  --chart-4: 36 100% 60%;
+  --chart-5: 270 100% 60%;
+  --sidebar-background: 229 25% 17%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 36 100% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 223 16% 24%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 223 16% 27%;
+  --sidebar-ring: 36 100% 50%;
+  --radius: 0.5rem;
+}
+
+.ag-theme-alpine-dark {
+  --ag-foreground-color: #fff;
+  --ag-background-color: #2f2f3d;
+  --ag-header-background-color: #444;
+  --ag-odd-row-background-color: #333;
+  --ag-even-row-background-color: #3a3a3a;
+  --ag-border-color: #444;
+  
+  /* AG Grid Base Styles */
+  --ag-grid-size: 4px;
+  --ag-icon-size: 16px;
+  --ag-header-height: 32px;
+  --ag-row-height: 25px;
+  --ag-cell-horizontal-padding: 8px;
+  --ag-borders: solid 1px;
+  --ag-border-radius: 3px;
+  --ag-row-border-width: 1px;
+  --ag-row-border-color: var(--ag-border-color);
+  --ag-selected-row-background-color: rgba(33, 150, 243, 0.3);
+  --ag-font-size: 14px;
+  --ag-font-family: inherit;
+  
+  /* More styles for proper rendering */
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+
+.ag-theme-alpine-dark .ag-root-wrapper {
+  border: var(--ag-borders);
+  border-color: var(--ag-border-color);
+  border-radius: var(--ag-border-radius);
+}
+
+.ag-theme-alpine-dark .ag-header {
+  background-color: var(--ag-header-background-color);
+  color: var(--ag-foreground-color);
+  font-weight: 600;
+}
+
+.ag-theme-alpine-dark .ag-row {
+  border-bottom-color: var(--ag-row-border-color);
+}
+
+.ag-theme-alpine-dark .ag-row-odd {
+  background-color: var(--ag-odd-row-background-color);
+}
+
+.ag-theme-alpine-dark .ag-row-even {
+  background-color: var(--ag-even-row-background-color);
+}
+
+.ag-theme-alpine-dark .ag-cell {
+  padding: 0 var(--ag-cell-horizontal-padding);
+  line-height: var(--ag-row-height);
+  border-right: var(--ag-borders);
+  border-right-color: var(--ag-border-color);
+}
+
+.tab.active {
+  background-color: hsl(36, 100%, 50%);
+  color: white;
+}
+
+.tab:not(.active) {
+  background-color: #333;
+  color: hsl(36, 100%, 50%);
+}
+
+.tab {
+  white-space: nowrap;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.9rem;
+  text-align: center;
+  margin: 0 5px;
+}
+
+.close-tab-btn {
+  margin-left: 10px;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.2rem;
+  background: none;
+  border: none;
+  font-weight: bold;
+}
+
+.metric-card canvas {
+  width: 180px;
+  height: 180px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+  cursor: pointer;
+}
+
+.legend-color {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  margin-right: 10px;
+}
+
+.file-upload-zone.drag-over {
+  @apply bg-accent border-primary;
+}
