@@ -34,43 +34,43 @@ interface MetricsSectionProps {
 const getMetricIcon = (metric: string) => {
   switch (metric) {
     case "Net Profit":
-      return <DollarSign className="h-4 w-4 text-primary" />;
+      return <DollarSign className="h-5 w-5 text-primary" />;
     case "Max DD":
-      return <TrendingDown className="h-4 w-4 text-destructive" />;
+      return <TrendingDown className="h-5 w-5 text-destructive" />;
     case "Profit Factor":
-      return <Scale className="h-4 w-4 text-primary" />;
+      return <Scale className="h-5 w-5 text-primary" />;
     case "EPO":
-      return <Target className="h-4 w-4 text-primary" />;
+      return <Target className="h-5 w-5 text-primary" />;
     case "Recovery Factor":
-      return <TrendingUp className="h-4 w-4 text-primary" />;
+      return <TrendingUp className="h-5 w-5 text-primary" />;
     case "Sharpe Ratio":
-      return <Activity className="h-4 w-4 text-primary" />;
+      return <Activity className="h-5 w-5 text-primary" />;
     case "Trades":
-      return <BarChart4 className="h-4 w-4 text-primary" />;
+      return <BarChart4 className="h-5 w-5 text-primary" />;
     case "Win Rate":
-      return <Award className="h-4 w-4 text-primary" />;
+      return <Award className="h-5 w-5 text-primary" />;
     case "Z-Score":
-      return <Zap className="h-4 w-4 text-primary" />;
+      return <Zap className="h-5 w-5 text-primary" />;
     case "AvgP":
-      return <ArrowUp className="h-4 w-4 text-primary" />;
+      return <ArrowUp className="h-5 w-5 text-primary" />;
     case "AvgL":
-      return <ArrowDown className="h-4 w-4 text-destructive" />;
+      return <ArrowDown className="h-5 w-5 text-destructive" />;
     case "Short Trades (won %) Count":
-      return <BarChart className="h-4 w-4 text-primary" />;
+      return <BarChart className="h-5 w-5 text-primary" />;
     case "Short Trades (won %) Percentage":
-      return <Percent className="h-4 w-4 text-primary" />;
+      return <Percent className="h-5 w-5 text-primary" />;
     case "Long Trades (won %) Count":
-      return <BarChart className="h-4 w-4 text-primary" />;
+      return <BarChart className="h-5 w-5 text-primary" />;
     case "Long Trades (won %) Percentage":
-      return <Percent className="h-4 w-4 text-primary" />;
+      return <Percent className="h-5 w-5 text-primary" />;
     case "Maximal position holding time":
-      return <Clock className="h-4 w-4 text-primary" />;
+      return <Clock className="h-5 w-5 text-primary" />;
     case "Average position holding time":
-      return <Timer className="h-4 w-4 text-primary" />;
+      return <Timer className="h-5 w-5 text-primary" />;
     case "Score":
-      return <PieChart className="h-4 w-4 text-primary" />;
+      return <PieChart className="h-5 w-5 text-primary" />;
     default:
-      return <Activity className="h-4 w-4 text-primary" />;
+      return <Activity className="h-5 w-5 text-primary" />;
   }
 };
 
