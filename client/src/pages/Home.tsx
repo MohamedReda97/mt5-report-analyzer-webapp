@@ -150,11 +150,24 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to parse reports');
+        const errorText = await response.text();
+        console.error('Server response:', response.status, errorText);
+        throw new Error(`Failed to parse reports: ${response.status} ${response.statusText}`);
       }
 
       // Get the parsed report data
       const parsedData: ParsedReport[] = await response.json();
+
+      // Check if any reports have errors
+      const reportsWithErrors = parsedData.filter(report => report.metrics.error);
+      if (reportsWithErrors.length > 0) {
+        console.warn('Some reports had parsing errors:', reportsWithErrors);
+        toast({
+          title: "Warning",
+          description: `${reportsWithErrors.length} report(s) had parsing issues but we'll continue with available data.`,
+          variant: "warning",
+        });
+      }
 
       // Create tab name from selected files
       const tabName = selectedFiles.map(file => file.name.replace('.html', '')).join(' | ');
@@ -183,7 +196,7 @@ export default function Home() {
       console.error('Error parsing reports:', error);
       toast({
         title: "Error",
-        description: "Failed to generate the comparison report. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate the comparison report. Please try again.",
         variant: "destructive",
       });
     } finally {

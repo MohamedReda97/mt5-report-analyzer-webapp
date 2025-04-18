@@ -44,7 +44,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
-    
+
     // Return file info
     res.json({
       id: req.file.filename,
@@ -52,37 +52,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       path: req.file.path
     });
   });
-  
+
   // API endpoint to parse multiple reports for comparison
   app.post('/api/reports/parse', upload.array('reports', 10), async (req, res) => {
     const files = req.files as Express.Multer.File[];
-    
+
     if (!files || files.length === 0) {
       return res.status(400).json({ message: 'No files uploaded' });
     }
-    
+
     try {
-      // Parse each file
-      const parsedReports = await Promise.all(files.map(file => parseReport(file.path, file.originalname)));
-      
+      // Parse each file with better error handling
+      const parsedReports = [];
+
+      for (const file of files) {
+        try {
+          console.log(`Processing file: ${file.originalname}, path: ${file.path}`);
+          // Check if file exists
+          if (!fs.existsSync(file.path)) {
+            console.error(`File does not exist: ${file.path}`);
+            throw new Error(`File does not exist: ${file.path}`);
+          }
+
+          const report = await parseReport(file.path, file.originalname);
+          parsedReports.push(report);
+        } catch (fileError) {
+          console.error(`Error parsing file ${file.originalname}:`, fileError);
+          // Continue with other files instead of failing completely
+          // But add a placeholder for the failed file
+          parsedReports.push({
+            fileName: file.originalname,
+            metrics: { error: `Failed to parse: ${fileError.message}` },
+            inputs: {},
+            deals: []
+          });
+        }
+      }
+
+      if (parsedReports.length === 0) {
+        throw new Error('All files failed to parse');
+      }
+
       // Calculate scores
       calculateMaxMetrics(parsedReports);
-      
+
       res.json(parsedReports);
     } catch (error) {
       console.error('Error parsing reports:', error);
-      res.status(500).json({ message: 'Failed to parse reports' });
+      res.status(500).json({ message: `Failed to parse reports: ${error.message}` });
     }
   });
-  
+
   // API endpoint to get a list of uploaded reports
   app.get('/api/reports', (req, res) => {
     const uploadsDir = path.join(__dirname, "..", "uploads");
-    
+
     if (!fs.existsSync(uploadsDir)) {
       return res.json([]);
     }
-    
+
     try {
       const files = fs.readdirSync(uploadsDir)
         .filter(file => file.endsWith('.html'))
@@ -91,34 +119,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: file.substring(file.indexOf('-') + 1), // Remove the unique prefix
           path: path.join(uploadsDir, file)
         }));
-      
+
       res.json(files);
     } catch (error) {
       console.error('Error reading reports directory:', error);
       res.status(500).json({ message: 'Failed to list reports' });
     }
   });
-  
+
   // Calculate max metrics to determine scores
   function calculateMaxMetrics(reports: any[]) {
     const maxCounts: Record<string, number> = {};
-    
+
     reports.forEach((item) => {
       maxCounts[item.fileName] = 0;
-      
+
       // Adjust metrics for comparison
       if (item.metrics["Max DD"]) item.metrics["Max DD"] *= -1;
       if (item.metrics["Z-Score"]) item.metrics["Z-Score"] *= -1;
     });
-    
+
     // List of metrics to be compared
     const metrics = ["Net Profit", "Max DD", "Profit Factor", "EPO", "Recovery Factor", "Z-Score", "Sharpe Ratio", "Trades", "Win Rate", "LRC", "GHPR", "LP", "LL", "AvgP", "AvgL", "AvgPn", "AvgLn"];
-    
+
     // Loop over each metric to find the file with the maximum value for that metric
     metrics.forEach((metric) => {
       let maxValue = -Infinity;
       let maxFile = null;
-      
+
       // Find the maximum value for the current metric
       reports.forEach((val) => {
         const value = parseFloat(val.metrics[metric] || 0);
@@ -127,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           maxFile = val.fileName;
         }
       });
-      
+
       // Increment the count of maxed attributes for the file with the highest metric value
       if (maxFile) {
         maxCounts[maxFile] += 1;
@@ -137,12 +165,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
     });
-    
+
     // Add scores to report metrics
     reports.forEach(report => {
       report.metrics["Score"] = maxCounts[report.fileName] || 0;
     });
-    
+
     return maxCounts;
   }
 
