@@ -4,47 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>Report Analyzer Web</title>
-    <link href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-grid.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/ag-grid-community/styles/ag-theme-alpine-dark.css" rel="stylesheet">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-      /* Override AG Grid styles to fix white background */
-      .ag-theme-alpine-dark,
-      .ag-theme-custom-dark {
-        --ag-background-color: hsl(229, 22%, 21%);
-        --ag-odd-row-background-color: hsl(229, 22%, 19%);
-        --ag-even-row-background-color: hsl(229, 22%, 23%);
-        --ag-header-background-color: hsl(222, 26%, 24%);
-        --ag-foreground-color: white;
-        --ag-border-color: hsla(223, 16%, 27%, 0.5);
-      }
 
-      /* Force all elements to use the theme background */
-      .ag-theme-custom-dark *,
-      .ag-theme-alpine-dark * {
-        background-color: inherit;
-      }
-
-      /* Restore specific backgrounds */
-      .ag-theme-custom-dark .ag-header,
-      .ag-theme-alpine-dark .ag-header {
-        background-color: var(--ag-header-background-color) !important;
-      }
-
-      .ag-theme-custom-dark .ag-row-odd,
-      .ag-theme-alpine-dark .ag-row-odd,
-      .ag-theme-custom-dark [role="row"]:nth-child(odd),
-      .ag-theme-alpine-dark [role="row"]:nth-child(odd) {
-        background-color: var(--ag-odd-row-background-color) !important;
-      }
-
-      .ag-theme-custom-dark .ag-row-even,
-      .ag-theme-alpine-dark .ag-row-even,
-      .ag-theme-custom-dark [role="row"]:nth-child(even),
-      .ag-theme-alpine-dark [role="row"]:nth-child(even) {
-        background-color: var(--ag-even-row-background-color) !important;
-      }
-    </style>
   </head>
   <body>
     <div id="root"></div>
