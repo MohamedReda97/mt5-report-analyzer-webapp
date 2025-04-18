@@ -1,7 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { ParsedReport } from "@shared/schema";
 import Chart from "chart.js/auto";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, ZoomIn } from "lucide-react";
+
+// We need to import the zoom plugin
+// Note: You may need to install this package with: npm install chartjs-plugin-zoom
+import zoomPlugin from 'chartjs-plugin-zoom';
+Chart.register(zoomPlugin);
 
 interface BalanceChartProps {
   reports: ParsedReport[];
@@ -11,6 +18,7 @@ interface BalanceChartProps {
 export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
   const chartRef = useRef<Chart | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   useEffect(() => {
     // Set up canvas reference
@@ -83,17 +91,6 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
       data: {
         datasets: datasets
       },
-      animation: false,
-      plugins: [
-      //   {
-      //   id: 'hideLabels',
-      //   beforeRender: (chart: any) => {
-      //     chart.data.datasets.forEach((dataset: any) => {
-      //       dataset.pointLabels = { display: false };
-      //     });
-      //   }
-      // }
-      ],
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -101,20 +98,11 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           x: {
             type: 'linear',
             title: {
-              display: true,
-              text: 'Deal Number',
-              color: 'rgba(255, 255, 255, 0.8)',
-              font: {
-                size: 12,
-                family: 'var(--font-sans)',
-                weight: '500'
-              },
-              padding: {top: 10, bottom: 0}
+              display: false, // Hide the title
             },
             grid: {
               color: 'rgba(255, 255, 255, 0.07)',
-              lineWidth: 0.5,
-              drawBorder: false
+              lineWidth: 0.5
             },
             border: {
               display: false
@@ -130,20 +118,11 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           },
           y: {
             title: {
-              display: true,
-              text: 'Balance',
-              color: 'rgba(255, 255, 255, 0.8)',
-              font: {
-                size: 12,
-                family: 'var(--font-sans)',
-                weight: '500'
-              },
-              padding: {top: 0, bottom: 10}
+              display: false, // Hide the title
             },
             grid: {
               color: 'rgba(255, 255, 255, 0.07)',
-              lineWidth: 0.5,
-              drawBorder: false
+              lineWidth: 0.5
             },
             border: {
               display: false
@@ -163,8 +142,8 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         },
         plugins: {
           legend: {
-            position: 'top',
-            align: 'center',
+            position: 'top' as const,
+            align: 'center' as const,
             labels: {
               color: 'rgba(255, 255, 255, 0.95)',
               boxWidth: 18,
@@ -173,7 +152,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
               font: {
                 size: 12,
                 family: 'var(--font-sans)',
-                weight: '500'
+                weight: 500
               },
               padding: 18
             }
@@ -191,7 +170,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
             bodyColor: 'rgba(255, 255, 255, 0.95)',
             titleFont: {
               family: 'var(--font-sans)',
-              weight: '600',
+              weight: 600,
               size: 13
             },
             bodyFont: {
@@ -222,6 +201,28 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
                 return label;
               }
             }
+          },
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x' as const,
+            },
+            zoom: {
+              wheel: {
+                enabled: false, // Disable mouse wheel zoom
+              },
+              pinch: {
+                enabled: false, // Disable pinch zoom for consistency
+              },
+              mode: 'x' as const,
+              drag: {
+                enabled: true,
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+                borderWidth: 1,
+                threshold: 10
+              },
+            }
           }
         },
         elements: {
@@ -242,11 +243,43 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         }
       }
     });
+
+    // Add event listener for zoom events
+    // Only listen for mousedown events since we're only using drag zoom
+    canvasRef.current.addEventListener('mousedown', () => {
+      setIsZoomed(true);
+    });
+  };
+
+  // Function to reset zoom
+  const resetZoom = () => {
+    if (chartRef.current) {
+      // @ts-ignore - TypeScript doesn't know about the resetZoom method
+      chartRef.current.resetZoom();
+      setIsZoomed(false);
+    }
   };
 
   return (
     <Card className="p-5 border-none shadow-lg h-[580px] bg-card/80">
-      <div className="w-full h-full">
+      <div className="flex justify-end mb-2 gap-2">
+        {isZoomed && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetZoom}
+            className="flex items-center gap-1 text-xs"
+          >
+            <RefreshCw size={14} />
+            Reset Zoom
+          </Button>
+        )}
+        <div className="text-xs text-muted-foreground flex items-center gap-1">
+          <ZoomIn size={14} />
+          Drag to zoom in on a specific range
+        </div>
+      </div>
+      <div className="w-full h-[calc(100%-40px)]">
         <canvas id={`balanceChart_${tabId}`} className="w-full h-full"></canvas>
       </div>
     </Card>
