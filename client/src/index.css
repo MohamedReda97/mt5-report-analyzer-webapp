@@ -10,7 +10,7 @@
   body {
     @apply font-sans antialiased bg-background text-foreground scrollbar-thin scrollbar-thumb-primary scrollbar-track-gray-800;
   }
-  
+
   html, body, #root {
     @apply h-full;
   }
@@ -20,16 +20,16 @@
   .scrollbar-thin {
     scrollbar-width: thin;
   }
-  
+
   .scrollbar-thumb-primary::-webkit-scrollbar-thumb {
-    background-color: hsl(36, 100%, 50%);
+    background-color: hsl(210, 100%, 60%);
     border-radius: 4px;
   }
-  
+
   .scrollbar-track-gray-800::-webkit-scrollbar-track {
     background-color: #333;
   }
-  
+
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -43,7 +43,7 @@
   --card-foreground: 0 0% 100%;
   --popover: 229 22% 21%;
   --popover-foreground: 0 0% 100%;
-  --primary: 36 100% 50%;
+  --primary: 210 100% 60%;
   --primary-foreground: 0 0% 100%;
   --secondary: 222 26% 24%;
   --secondary-foreground: 0 0% 100%;
@@ -55,7 +55,7 @@
   --destructive-foreground: 0 0% 100%;
   --border: 223 16% 27%;
   --input: 223 16% 24%;
-  --ring: 36 100% 50%;
+  --ring: 210 100% 60%;
   --chart-1: 210 100% 60%;
   --chart-2: 339 100% 60%;
   --chart-3: 159 100% 60%;
@@ -63,12 +63,12 @@
   --chart-5: 270 100% 60%;
   --sidebar-background: 229 25% 17%;
   --sidebar-foreground: 0 0% 100%;
-  --sidebar-primary: 36 100% 50%;
+  --sidebar-primary: 210 100% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 223 16% 24%;
   --sidebar-accent-foreground: 0 0% 100%;
   --sidebar-border: 223 16% 27%;
-  --sidebar-ring: 36 100% 50%;
+  --sidebar-ring: 210 100% 60%;
   --radius: 0.5rem;
 }
 
@@ -79,7 +79,7 @@
   --ag-odd-row-background-color: #333;
   --ag-even-row-background-color: #3a3a3a;
   --ag-border-color: #444;
-  
+
   /* AG Grid Base Styles */
   --ag-grid-size: 4px;
   --ag-icon-size: 16px;
@@ -93,7 +93,7 @@
   --ag-selected-row-background-color: rgba(33, 150, 243, 0.3);
   --ag-font-size: 14px;
   --ag-font-family: inherit;
-  
+
   /* More styles for proper rendering */
   display: block;
   position: relative;
@@ -132,13 +132,13 @@
 }
 
 .tab.active {
-  background-color: hsl(36, 100%, 50%);
+  background-color: hsl(210, 100%, 60%);
   color: white;
 }
 
 .tab:not(.active) {
   background-color: #333;
-  color: hsl(36, 100%, 50%);
+  color: hsl(210, 100%, 60%);
 }
 
 .tab {
@@ -164,33 +164,39 @@
 }
 
 .metric-card {
-  background-color: transparent !important; 
+  background-color: #1e2130 !important;
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  height: 130px; /* shorter */
+  height: 120px; /* shorter */
   padding: 0 !important;
   margin: 3px !important;
   width: 100% !important;
-  max-width: 250px !important; /* wider */
+  max-width: 100% !important; /* full width */
+  transition: transform 0.2s ease-in-out;
 }
 
 .metric-card h3 {
   color: white;
-  font-weight: 500;
+  font-weight: 700;
   margin-bottom: 0;
-  background-color: #1a212e;
-  padding: 6px 0;
-  font-size: 14px;
+  background-color: #252a3a;
+  padding: 5px 0;
+  font-size: 13px;
   border-radius: 0;
   text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .metric-card canvas {
   width: 100% !important;
-  height: 94px !important; /* Adjusted to match the card's height minus header */
+  height: 88px !important; /* Adjusted to match the card's height minus header */
   max-width: 100%;
-  padding: 4px 8px;
+  padding: 2px 6px;
   background-color: transparent;
 }
 

@@ -5,7 +5,7 @@ import ReportTab from "@/components/ReportTab";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getRandomColor } from "@/lib/utils";
-import { generateComparisonReport, calculateMaxMetrics } from "@/lib/reportUtils";
+import { calculateMaxMetrics } from "@/lib/reportUtils";
 import { ReportFile, ParsedReport } from "@shared/schema";
 
 export default function Home() {
@@ -17,58 +17,58 @@ export default function Home() {
   const fileUploadZoneRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  
+
   // Set up drag and drop event listeners
   useEffect(() => {
     const fileUploadZone = fileUploadZoneRef.current;
     if (!fileUploadZone) return;
-    
+
     const handleDragOver = (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
       fileUploadZone.classList.add("drag-over");
     };
-    
+
     const handleDragLeave = (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
       fileUploadZone.classList.remove("drag-over");
     };
-    
+
     const handleDrop = (e: DragEvent) => {
       e.preventDefault();
       e.stopPropagation();
       fileUploadZone.classList.remove("drag-over");
-      
+
       if (e.dataTransfer?.files.length) {
         processFiles(e.dataTransfer.files);
       }
     };
-    
+
     fileUploadZone.addEventListener("dragover", handleDragOver);
     fileUploadZone.addEventListener("dragleave", handleDragLeave);
     fileUploadZone.addEventListener("drop", handleDrop);
-    
+
     return () => {
       fileUploadZone.removeEventListener("dragover", handleDragOver);
       fileUploadZone.removeEventListener("dragleave", handleDragLeave);
       fileUploadZone.removeEventListener("drop", handleDrop);
     };
   }, []);
-  
+
   const handleFileUploadClick = () => {
     fileInputRef.current?.click();
   };
-  
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {
       processFiles(e.target.files);
     }
   };
-  
+
   const processFiles = (fileList: FileList) => {
     const htmlFiles = Array.from(fileList).filter(file => file.name.endsWith('.html'));
-    
+
     if (htmlFiles.length === 0) {
       toast({
         title: "Invalid Files",
@@ -77,44 +77,44 @@ export default function Home() {
       });
       return;
     }
-    
+
     // Add to uploaded files
     const newFiles = htmlFiles.map(file => ({
       id: `file_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       name: file.name,
       file,
     }));
-    
+
     setUploadedFiles(prev => {
       const updatedFiles = [...prev];
-      
+
       newFiles.forEach(newFile => {
         if (!updatedFiles.some(f => f.name === newFile.name)) {
           updatedFiles.push(newFile);
         }
       });
-      
+
       return updatedFiles;
     });
-    
+
     // Add to selected files
     setSelectedFiles(prev => {
       const updatedFiles = [...prev];
-      
+
       newFiles.forEach(newFile => {
         if (!updatedFiles.some(f => f.name === newFile.name)) {
           updatedFiles.push(newFile);
         }
       });
-      
+
       return updatedFiles;
     });
   };
-  
+
   const toggleFileSelection = (file: ReportFile) => {
     setSelectedFiles(prev => {
       const isSelected = prev.some(f => f.id === file.id);
-      
+
       if (isSelected) {
         return prev.filter(f => f.id !== file.id);
       } else {
@@ -122,7 +122,7 @@ export default function Home() {
       }
     });
   };
-  
+
   const handleGenerateReport = async () => {
     if (selectedFiles.length === 0) {
       toast({
@@ -132,42 +132,42 @@ export default function Home() {
       });
       return;
     }
-    
+
     setIsGenerating(true);
-    
+
     try {
       // Create FormData with all selected files
       const formData = new FormData();
       selectedFiles.forEach(fileObj => {
         formData.append('reports', fileObj.file);
       });
-      
+
       // Upload files and get parsed data
       const response = await fetch('/api/reports/parse', {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to parse reports');
       }
-      
+
       // Get the parsed report data
       const parsedData: ParsedReport[] = await response.json();
-      
+
       // Create tab name from selected files
       const tabName = selectedFiles.map(file => file.name.replace('.html', '')).join(' | ');
       const tabId = `tab_${new Date().getTime()}`; // Unique ID
-      
+
       // Assign colors to each report
       parsedData.forEach(report => {
         report.color = getRandomColor();
       });
-      
+
       // Calculate scores
       calculateMaxMetrics(parsedData);
-      
+
       // Create new tab
       setTabs(prev => ({
         ...prev,
@@ -176,14 +176,9 @@ export default function Home() {
           data: parsedData
         }
       }));
-      
+
       // Set as active tab
       setActiveTabId(tabId);
-      
-      toast({
-        title: "Report Generated",
-        description: "Comparison report has been created successfully.",
-      });
     } catch (error) {
       console.error('Error parsing reports:', error);
       toast({
@@ -195,31 +190,31 @@ export default function Home() {
       setIsGenerating(false);
     }
   };
-  
+
   const closeTab = (tabId: string) => {
     setTabs(prev => {
       const newTabs = { ...prev };
       delete newTabs[tabId];
       return newTabs;
     });
-    
+
     if (activeTabId === tabId) {
       setActiveTabId("starterPage");
     }
   };
-  
+
   return (
     <div className="flex flex-col h-full">
       {/* Navigation Panel */}
       <div className="nav-container">
         <div className="nav-panel bg-secondary p-2 flex flex-row items-center justify-start gap-1 border-b border-border overflow-x-auto whitespace-nowrap">
-          <button 
+          <button
             className={`tab ${activeTabId === "starterPage" ? "active" : ""}`}
             onClick={() => setActiveTabId("starterPage")}
           >
             Starter Page
           </button>
-          
+
           {/* Dynamic Tabs */}
           {Object.entries(tabs).map(([id, tabData]) => (
             <button
@@ -228,7 +223,7 @@ export default function Home() {
               onClick={() => setActiveTabId(id)}
             >
               {tabData.name}
-              <span 
+              <span
                 className="close-tab-btn"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -241,7 +236,7 @@ export default function Home() {
           ))}
         </div>
       </div>
-      
+
       {/* Main Content Area */}
       <div className="main-content flex-1 p-5 overflow-y-auto">
         {/* Starter Page */}
@@ -250,9 +245,9 @@ export default function Home() {
             {/* File Upload Section */}
             <Card className="p-5">
               <h2 className="text-xl text-primary mb-4 cursor-pointer">Upload Reports for Comparison</h2>
-              
+
               {/* File Upload Zone */}
-              <div 
+              <div
                 ref={fileUploadZoneRef}
                 className="file-upload-zone bg-accent p-10 rounded-lg border-2 border-dashed border-muted text-center cursor-pointer mb-4"
                 onClick={handleFileUploadClick}
@@ -266,7 +261,7 @@ export default function Home() {
                 <p className="text-sm text-muted-foreground mb-4">or</p>
                 <Button>
                   Browse Files
-                  <input 
+                  <input
                     type="file"
                     ref={fileInputRef}
                     multiple
@@ -276,19 +271,19 @@ export default function Home() {
                   />
                 </Button>
               </div>
-              
+
               {/* File List */}
-              <FileList 
+              <FileList
                 files={uploadedFiles}
                 selectedFiles={selectedFiles}
                 onToggleSelect={toggleFileSelection}
               />
             </Card>
-            
+
             {/* Generate Button Section */}
             <Card className="p-5">
               <div className="flex justify-center">
-                <Button 
+                <Button
                   onClick={handleGenerateReport}
                   disabled={isGenerating || selectedFiles.length === 0}
                   className="px-6"
@@ -299,14 +294,14 @@ export default function Home() {
             </Card>
           </div>
         )}
-        
+
         {/* Report Tabs */}
         {Object.entries(tabs).map(([id, tabData]) => (
-          <div 
+          <div
             key={id}
             className={`${activeTabId === id ? "block" : "hidden"}`}
           >
-            <ReportTab 
+            <ReportTab
               id={id}
               reports={tabData.data}
             />

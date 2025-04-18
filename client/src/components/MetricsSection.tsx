@@ -4,6 +4,24 @@ import { formatMetricName, sanitizeMetricValue, formatMetricValue } from "@/lib/
 import { ParsedReport } from "@shared/schema";
 import Chart from "chart.js/auto";
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import {
+  TrendingUp,
+  TrendingDown,
+  BarChart4,
+  PieChart,
+  Clock,
+  Target,
+  Percent,
+  DollarSign,
+  Scale,
+  Activity,
+  Award,
+  BarChart,
+  Timer,
+  ArrowUp,
+  ArrowDown,
+  Zap
+} from "lucide-react";
 
 interface MetricsSectionProps {
   reports: ParsedReport[];
@@ -11,6 +29,50 @@ interface MetricsSectionProps {
   onToggleLegend: (fileName: string) => void;
   tabId: string;
 }
+
+// Helper function to get the appropriate icon for each metric
+const getMetricIcon = (metric: string) => {
+  switch (metric) {
+    case "Net Profit":
+      return <DollarSign className="h-4 w-4 text-primary" />;
+    case "Max DD":
+      return <TrendingDown className="h-4 w-4 text-destructive" />;
+    case "Profit Factor":
+      return <Scale className="h-4 w-4 text-primary" />;
+    case "EPO":
+      return <Target className="h-4 w-4 text-primary" />;
+    case "Recovery Factor":
+      return <TrendingUp className="h-4 w-4 text-primary" />;
+    case "Sharpe Ratio":
+      return <Activity className="h-4 w-4 text-primary" />;
+    case "Trades":
+      return <BarChart4 className="h-4 w-4 text-primary" />;
+    case "Win Rate":
+      return <Award className="h-4 w-4 text-primary" />;
+    case "Z-Score":
+      return <Zap className="h-4 w-4 text-primary" />;
+    case "AvgP":
+      return <ArrowUp className="h-4 w-4 text-primary" />;
+    case "AvgL":
+      return <ArrowDown className="h-4 w-4 text-destructive" />;
+    case "Short Trades (won %) Count":
+      return <BarChart className="h-4 w-4 text-primary" />;
+    case "Short Trades (won %) Percentage":
+      return <Percent className="h-4 w-4 text-primary" />;
+    case "Long Trades (won %) Count":
+      return <BarChart className="h-4 w-4 text-primary" />;
+    case "Long Trades (won %) Percentage":
+      return <Percent className="h-4 w-4 text-primary" />;
+    case "Maximal position holding time":
+      return <Clock className="h-4 w-4 text-primary" />;
+    case "Average position holding time":
+      return <Timer className="h-4 w-4 text-primary" />;
+    case "Score":
+      return <PieChart className="h-4 w-4 text-primary" />;
+    default:
+      return <Activity className="h-4 w-4 text-primary" />;
+  }
+};
 
 export default function MetricsSection({ reports, legendState, onToggleLegend, tabId }: MetricsSectionProps) {
   const chartsRef = useRef<Record<string, Chart>>({});
@@ -32,10 +94,10 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
 
   const createMetricsCharts = () => {
     const metricsToDisplay = [
-      "Net Profit", "Max DD", "Profit Factor", "EPO", "Recovery Factor", 
-      "Sharpe Ratio", "Trades", "Win Rate", "Z-Score", "AvgP", "AvgL", 
-      "Short Trades (won %) Count", "Short Trades (won %) Percentage", 
-      "Long Trades (won %) Count", "Long Trades (won %) Percentage", 
+      "Net Profit", "Max DD", "Profit Factor", "EPO", "Recovery Factor",
+      "Sharpe Ratio", "Trades", "Win Rate", "Z-Score", "AvgP", "AvgL",
+      "Short Trades (won %) Count", "Short Trades (won %) Percentage",
+      "Long Trades (won %) Count", "Long Trades (won %) Percentage",
       "Maximal position holding time", "Average position holding time", "Score"
     ];
 
@@ -64,10 +126,10 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
       const colors = filteredReports.map(report => report.color);
 
       // Process values for time-based metrics
-      const processedValues = values.map((value, index) => {
+      const processedValues = values.map((value) => {
         // For time-based metrics, convert HH:MM:SS to hours
-        if (typeof value === 'string' && value.includes(':') && 
-           (metric.includes("Maximal position holding time") || 
+        if (typeof value === 'string' && value.includes(':') &&
+           (metric.includes("Maximal position holding time") ||
             metric.includes("Average position holding time"))) {
           const parts = value.split(':');
           const hours = parseInt(parts[0] || '0');
@@ -90,12 +152,12 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
       let tickStep = range / 5;
 
       // Round the tickStep to a sensible value (handle zero or very small values)
-      const magnitude = tickStep > 0 
-        ? Math.pow(10, Math.floor(Math.log10(tickStep))) 
+      const magnitude = tickStep > 0
+        ? Math.pow(10, Math.floor(Math.log10(tickStep)))
         : 0.1;
 
-      tickStep = tickStep > 0 
-        ? Math.ceil(tickStep / magnitude) * magnitude 
+      tickStep = tickStep > 0
+        ? Math.ceil(tickStep / magnitude) * magnitude
         : 0.5;
 
       // Generate ticks
@@ -142,23 +204,7 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
                 display: false
               },
               ticks: {
-                color: 'rgba(255, 255, 255, 0.7)',
-                font: {
-                  size: 9,
-                  family: 'monospace'
-                },
-                // Type any is used to bypass the specific Chart.js typing issues
-                callback: function(this: any, tickValue: any, index: any, ticks: any) {
-                  // Ensure we have a number
-                  const value = Number(tickValue);
-
-                  // Format the tick values for better readability
-                  if (!isNaN(value) && Math.abs(value) >= 1000) {
-                    return (value / 1000).toLocaleString() + 'k';
-                  }
-                  return tickValue.toString();
-                },
-                maxRotation: 0
+                display: false // Hide x-axis ticks/labels
               },
               min: minValue,
               max: maxValue + (maxValue - minValue) * 0.1 // Add some padding
@@ -195,7 +241,7 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
                 },
                 label: function(context) {
                   // For time-based metrics display the original format
-                  if (metric.includes("Maximal position holding time") || 
+                  if (metric.includes("Maximal position holding time") ||
                       metric.includes("Average position holding time")) {
                     const originalValue = filteredReports[context.dataIndex].metrics[metric];
                     if (typeof originalValue === 'string') {
@@ -218,7 +264,7 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
   };
 
   return (
-    <Card className="p-4 border-none shadow-lg bg-transparent"> {/* Changed background to transparent */}
+    <Card className="p-5 border-none shadow-lg bg-card/80">
       {/* Legend Section */}
       <div className="flex justify-center mb-4 flex-wrap">
         {reports.map(report => (
@@ -227,7 +273,10 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
             className="legend-item"
             onClick={() => onToggleLegend(report.fileName)}
             data-source={report.fileName}
-            style={{ opacity: legendState[report.fileName] ? 1 : 0.5 }}
+            style={{
+              opacity: legendState[report.fileName] ? 1 : 0.5,
+              borderColor: legendState[report.fileName] ? `hsla(var(--primary), 0.3)` : 'transparent'
+            }}
           >
             <div
               className="legend-color"
@@ -239,17 +288,20 @@ export default function MetricsSection({ reports, legendState, onToggleLegend, t
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-1 justify-items-center p-2 rounded-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6 gap-3 justify-items-center p-2 rounded-lg">
         {[
-          "Net Profit", "Max DD", "Profit Factor", "EPO", 
-          "Recovery Factor", "Sharpe Ratio", "Trades", "Win Rate", 
-          "Z-Score", "AvgP", "AvgL", "Short Trades (won %) Count", 
-          "Short Trades (won %) Percentage", "Long Trades (won %) Count", 
-          "Long Trades (won %) Percentage", "Maximal position holding time", 
+          "Net Profit", "Max DD", "Profit Factor", "EPO",
+          "Recovery Factor", "Sharpe Ratio", "Trades", "Win Rate",
+          "Z-Score", "AvgP", "AvgL", "Short Trades (won %) Count",
+          "Short Trades (won %) Percentage", "Long Trades (won %) Count",
+          "Long Trades (won %) Percentage", "Maximal position holding time",
           "Average position holding time", "Score"
         ].map(metric => (
-          <div key={metric} className="metric-card text-center"> {/* Added text-center for centering */}
-            <h3 className="text-center">{formatMetricName(metric)}</h3> {/* Added text-center for centering */}
+          <div key={metric} className="metric-card text-center hover:scale-105 transition-transform duration-200">
+            <h3 className="text-center">
+              {getMetricIcon(metric)}
+              <span>{formatMetricName(metric)}</span>
+            </h3>
             <canvas id={`${metric.replace(/\s+/g, '_')}_${tabId}`} width="150" height="120"></canvas>
           </div>
         ))}

@@ -7,29 +7,57 @@ export function cn(...inputs: ClassValue[]) {
 
 // Keep track of used colors to ensure no duplicates
 const usedColors = new Set<string>();
+// Keep track of last used color to avoid similar colors
+let lastUsedColor: string | null = null;
 
 export function getRandomColor() {
+  // Distinct, high-contrast colors that are not too light
+  // Avoiding yellows and light colors for better visibility
   const colors = [
-    '#f59e0b', '#10b981', '#3b82f6', '#ef4444', // Primary colors (yellow, green, blue, red)
-    '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', // Secondary (purple, pink, teal, orange)
-    '#a3e635', '#6366f1', '#fcd34d', '#64748b', // Tertiary (lime, indigo, amber, slate)
-    '#22d3ee', '#f43f5e', '#0ea5e9', '#84cc16'  // Accent (cyan, rose, sky, lime)
+    '#e63946', // Bright red
+    '#3a86ff', // Bright blue
+    '#2a9d8f', // Teal
+    '#8338ec', // Purple
+    '#fb5607', // Orange
+    '#ff006e', // Hot pink
+    '#1e88e5', // Material blue
+    '#43a047', // Material green
+    '#5e35b1', // Deep purple
+    '#d81b60', // Material pink
+    '#0097a7', // Cyan
+    '#c62828', // Dark red
+    '#6a1b9a', // Dark purple
+    '#00695c', // Dark teal
+    '#283593', // Indigo
+    '#558b2f'  // Olive green
   ];
-  
+
   // If all colors used, reset
   if (usedColors.size >= colors.length) {
     usedColors.clear();
+    lastUsedColor = null;
   }
-  
-  // Find an unused color
+
+  // Find an unused color that's not too similar to the last one
   let color: string;
   do {
     color = colors[Math.floor(Math.random() * colors.length)];
+    // If we have a last color, make sure the new one is different enough
+    if (lastUsedColor && areSimilarColors(color, lastUsedColor)) {
+      continue;
+    }
   } while (usedColors.has(color));
-  
-  // Mark as used
+
+  // Mark as used and update last used color
   usedColors.add(color);
+  lastUsedColor = color;
   return color;
+}
+
+// Helper function to check if two colors are too similar
+function areSimilarColors(color1: string, color2: string): boolean {
+  // Simple check - if the first 3 characters after # are the same, colors might be similar
+  return color1.substring(1, 4) === color2.substring(1, 4);
 }
 
 export function formatMetricName(metric: string): string {
@@ -78,7 +106,7 @@ export function formatMetricValue(metric: string, value: number | string): strin
     if (isNaN(numValue)) return value;
     value = numValue;
   }
-  
+
   // Handle numeric values
   if (metric.includes("holding time")) {
     // This should only happen if we have a numeric value for holding time
