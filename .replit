@@ -7,7 +7,7 @@ channel = "stable-24_05"
 
 [deployment]
 deploymentTarget = "autoscale"
-build = ["npm", "run", "build", "&&", "npm", "run", "remix:build"]
+build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
 [workflows]

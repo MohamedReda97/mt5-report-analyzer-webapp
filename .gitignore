@@ -3,5 +3,7 @@ dist
 uploads
 .DS_Store
 server/public
+# Don't ignore the root public directory as it's needed for deployment
+# public
 vite.config.ts.*
 *.tar.gz
