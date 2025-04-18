@@ -53,8 +53,8 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
       // Create data points with x: deal number, y: balance
       const dataPoints = sortedDeals.map(deal => ({
         x: parseInt(deal.Deal.toString()),
-        y: typeof deal.Balance === "string" 
-          ? parseFloat(deal.Balance.replace(/\s/g, "")) 
+        y: typeof deal.Balance === "string"
+          ? parseFloat(deal.Balance.replace(/\s/g, ""))
           : parseFloat(deal.Balance.toString())
       }));
 
@@ -64,9 +64,16 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         data: dataPoints,
         borderColor: report.color,
         backgroundColor: "rgba(0,0,0,0)",
-        borderWidth: 2,
+        borderWidth: 3,
         tension: 0.4,
-        fill: false
+        fill: false,
+        pointBackgroundColor: report.color,
+        pointBorderColor: 'rgba(255, 255, 255, 0.8)',
+        pointBorderWidth: 1,
+        pointHoverRadius: 6,
+        pointHoverBorderWidth: 2,
+        pointHoverBackgroundColor: report.color,
+        pointHoverBorderColor: 'white'
       };
     });
 
@@ -94,44 +101,60 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           x: {
             type: 'linear',
             title: {
-              display: false,
+              display: true,
               text: 'Deal Number',
-              color: 'rgba(255, 255, 255, 0.7)'
+              color: 'rgba(255, 255, 255, 0.8)',
+              font: {
+                size: 12,
+                family: 'var(--font-sans)',
+                weight: '500'
+              },
+              padding: {top: 10, bottom: 0}
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.05)',
-              lineWidth: 0.5
+              color: 'rgba(255, 255, 255, 0.07)',
+              lineWidth: 0.5,
+              drawBorder: false
             },
             border: {
               display: false
             },
             ticks: {
-              color: 'rgba(255, 255, 255, 0.7)',
+              color: 'rgba(255, 255, 255, 0.8)',
               font: {
-                size: 10,
-                family: 'monospace'
-              }
+                size: 11,
+                family: 'var(--font-mono)'
+              },
+              padding: 5
             }
           },
           y: {
             title: {
-              display: false,
+              display: true,
               text: 'Balance',
-              color: 'rgba(255, 255, 255, 0.7)'
+              color: 'rgba(255, 255, 255, 0.8)',
+              font: {
+                size: 12,
+                family: 'var(--font-sans)',
+                weight: '500'
+              },
+              padding: {top: 0, bottom: 10}
             },
             grid: {
-              color: 'rgba(255, 255, 255, 0.05)',
-              lineWidth: 0.5
+              color: 'rgba(255, 255, 255, 0.07)',
+              lineWidth: 0.5,
+              drawBorder: false
             },
             border: {
               display: false
             },
             ticks: {
-              color: 'rgba(255, 255, 255, 0.7)',
+              color: 'rgba(255, 255, 255, 0.8)',
               font: {
-                size: 10,
-                family: 'monospace'
+                size: 11,
+                family: 'var(--font-mono)'
               },
+              padding: 8,
               callback: function(value: any) {
                 return '$' + value.toLocaleString();
               }
@@ -143,12 +166,16 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
             position: 'top',
             align: 'center',
             labels: {
-              color: 'rgba(255, 255, 255, 0.9)',
-              boxWidth: 15,
+              color: 'rgba(255, 255, 255, 0.95)',
+              boxWidth: 18,
+              usePointStyle: true,
+              pointStyle: 'rect',
               font: {
-                size: 12
+                size: 12,
+                family: 'var(--font-sans)',
+                weight: '500'
               },
-              padding: 15
+              padding: 18
             }
           },
           datalabels: {
@@ -157,11 +184,23 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
           tooltip: {
             mode: 'index',
             intersect: false,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            borderColor: 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: 'rgba(20, 20, 30, 0.9)',
+            borderColor: 'hsla(var(--primary), 0.3)',
             borderWidth: 1,
-            titleColor: 'rgba(255, 255, 255, 0.9)',
-            bodyColor: 'rgba(255, 255, 255, 0.9)',
+            titleColor: 'rgba(255, 255, 255, 0.95)',
+            bodyColor: 'rgba(255, 255, 255, 0.95)',
+            titleFont: {
+              family: 'var(--font-sans)',
+              weight: '600',
+              size: 13
+            },
+            bodyFont: {
+              family: 'var(--font-mono)',
+              size: 12
+            },
+            padding: 12,
+            cornerRadius: 6,
+            boxPadding: 6,
             callbacks: {
               title: function(tooltipItems: any[]) {
                 if (tooltipItems.length > 0 && tooltipItems[0].parsed.x) {
@@ -175,7 +214,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
                   label += ': ';
                 }
                 if (context.parsed.y !== null) {
-                  label += '$' + context.parsed.y.toLocaleString('en-US', { 
+                  label += '$' + context.parsed.y.toLocaleString('en-US', {
                     minimumFractionDigits: 0, // Round to whole numbers
                     maximumFractionDigits: 0
                   });
@@ -187,11 +226,13 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         },
         elements: {
           point: {
-            radius: 4, // Remove point markers in line
-            hoverRadius: 4 // Show points only on hover
+            radius: 0, // Hide points by default
+            hoverRadius: 6, // Show points on hover
+            hitRadius: 8 // Larger hit area for better UX
           },
           line: {
-            tension: 0.3
+            tension: 0.3,
+            capBezierPoints: true
           }
         },
         interaction: {
@@ -204,7 +245,7 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
   };
 
   return (
-    <Card className="p-4 border-none shadow-lg h-[580px]">
+    <Card className="p-5 border-none shadow-lg h-[580px] bg-card/80">
       <div className="w-full h-full">
         <canvas id={`balanceChart_${tabId}`} className="w-full h-full"></canvas>
       </div>
