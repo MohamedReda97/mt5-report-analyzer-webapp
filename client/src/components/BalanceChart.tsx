@@ -77,14 +77,16 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
         datasets: datasets
       },
       animation: false,
-      plugins: [{
-        id: 'hideLabels',
-        beforeRender: (chart: any) => {
-          chart.data.datasets.forEach((dataset: any) => {
-            dataset.pointLabels = { display: false };
-          });
-        }
-      }],
+      plugins: [
+      //   {
+      //   id: 'hideLabels',
+      //   beforeRender: (chart: any) => {
+      //     chart.data.datasets.forEach((dataset: any) => {
+      //       dataset.pointLabels = { display: false };
+      //     });
+      //   }
+      // }
+      ],
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -148,6 +150,9 @@ export default function BalanceChart({ reports, tabId }: BalanceChartProps) {
               },
               padding: 15
             }
+          },
+          datalabels: {
+            display: false
           },
           tooltip: {
             mode: 'index',
