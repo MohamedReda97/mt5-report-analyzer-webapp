@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import path from "path";
 import fs from "fs";
+import { performCleanup, setupScheduledCleanup, defaultCleanupConfig } from "./fileCleanup";
 
 const app = express();
 app.use(express.json());
@@ -22,6 +23,15 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
   console.log(`Created uploads directory at ${uploadsDir}`);
 }
+
+// Run file cleanup on startup if enabled
+if (defaultCleanupConfig.cleanupOnStartup) {
+  log('Running startup file cleanup', 'file-cleanup');
+  performCleanup(defaultCleanupConfig);
+}
+
+// Set up scheduled file cleanup
+const cleanupInterval = setupScheduledCleanup(defaultCleanupConfig);
 
 app.use((req, res, next) => {
   const start = Date.now();

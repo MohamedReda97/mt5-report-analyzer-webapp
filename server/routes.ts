@@ -6,6 +6,8 @@ import path from "path";
 import { fileURLToPath } from 'url';
 import { parseReport, extractMetrics, extractDeals } from "./reportHandler";
 import { storage } from "./storage";
+import { performCleanup, listFiles, defaultCleanupConfig, CleanupConfig } from "./fileCleanup";
+import { log } from "./vite";
 
 // Get directory paths for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -44,6 +46,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
+
+    // Run cleanup after upload
+    performCleanup(defaultCleanupConfig);
+    log(`File uploaded: ${req.file.originalname}`, 'file-upload');
 
     // Return file info
     res.json({
@@ -96,6 +102,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate scores
       calculateMaxMetrics(parsedReports);
 
+      // Run cleanup after processing
+      performCleanup(defaultCleanupConfig);
+      log(`Processed ${files.length} files`, 'file-upload');
+
       res.json(parsedReports);
     } catch (error) {
       console.error('Error parsing reports:', error);
@@ -124,6 +134,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error reading reports directory:', error);
       res.status(500).json({ message: 'Failed to list reports' });
+    }
+  });
+
+  // API endpoint to get file statistics and trigger cleanup
+  app.get('/api/files/stats', (req, res) => {
+    try {
+      const files = listFiles();
+      const totalSize = files.reduce((total, file) => total + file.size, 0);
+      const oldestFile = files.length > 0 ? files.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0] : null;
+      const newestFile = files.length > 0 ? files.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0] : null;
+
+      res.json({
+        totalFiles: files.length,
+        totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+        oldestFile: oldestFile ? {
+          name: oldestFile.name,
+          createdAt: oldestFile.createdAt,
+          age: Math.floor((Date.now() - oldestFile.createdAt.getTime()) / (1000 * 60 * 60 * 24)) + ' days'
+        } : null,
+        newestFile: newestFile ? {
+          name: newestFile.name,
+          createdAt: newestFile.createdAt
+        } : null,
+        cleanupConfig: defaultCleanupConfig
+      });
+    } catch (error) {
+      console.error('Error getting file stats:', error);
+      res.status(500).json({ message: 'Failed to get file statistics' });
+    }
+  });
+
+  // API endpoint to manually trigger cleanup
+  app.post('/api/files/cleanup', (req, res) => {
+    try {
+      // Get custom cleanup config from request body or use default
+      const customConfig: Partial<CleanupConfig> = req.body || {};
+      const config: CleanupConfig = {
+        ...defaultCleanupConfig,
+        ...customConfig
+      };
+
+      // Perform cleanup
+      const result = performCleanup(config);
+
+      res.json({
+        success: true,
+        message: `Cleanup completed successfully. Deleted ${result.oldFilesDeleted + result.excessFilesDeleted} files.`,
+        ...result
+      });
+    } catch (error) {
+      console.error('Error during manual cleanup:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to perform cleanup',
+        error: error.message
+      });
     }
   });
 
