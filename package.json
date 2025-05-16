@@ -4,9 +4,10 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "set NODE_ENV=development && tsx server/index.ts",
+    "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "start": "set NODE_ENV=production && node dist/index.js",
+    "vercel-build": "vite build",
+    "start": "cross-env NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "db:push": "drizzle-kit push"
   },
@@ -106,6 +107,7 @@
     "vite": "^5.4.14"
   },
   "optionalDependencies": {
-    "bufferutil": "^4.0.8"
+    "bufferutil": "^4.0.8",
+    "@vercel/blob": "^0.22.0"
   }
 }

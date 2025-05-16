@@ -1,0 +1,10 @@
+{
+  "name": "mt5-report-analyzer-api",
+  "version": "1.0.0",
+  "description": "API for MT5 Report Analyzer",
+  "type": "module",
+  "dependencies": {
+    "cheerio": "^1.0.0"
+  },
+  "devDependencies": {}
+}
