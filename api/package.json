@@ -4,7 +4,8 @@
   "description": "API for MT5 Report Analyzer",
   "type": "module",
   "dependencies": {
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.0.0",
+    "formidable": "^3.5.1"
   },
   "devDependencies": {}
 }

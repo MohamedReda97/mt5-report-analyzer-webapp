@@ -60,7 +60,20 @@ This project has been configured for deployment on Vercel. Follow these steps to
 
 ### Important Notes for Production Deployment
 
-- **File Storage**: The original application uses local file storage for uploaded reports, which won't work on Vercel's serverless environment. For production deployment, implement one of these solutions:
+- **File Processing**: The application now processes HTML report files directly in the serverless functions using the formidable package. The files are parsed in memory and not stored permanently.
+
+- **API Routes**: The application has been modified to use Vercel's serverless functions. The API routes are located in the `/api` directory and now include:
+  - `/api/reports/upload` - Handles file uploads
+  - `/api/reports/parse` - Parses uploaded HTML reports
+  - `/api/files/stats` - Returns file statistics
+  - `/api/files/cleanup` - Handles file cleanup
+
+- **Limitations**: Due to Vercel's serverless nature, there are some limitations:
+  - Files are processed in memory and not stored permanently
+  - Large files may cause timeouts (the function timeout is set to 60 seconds)
+  - Complex parsing operations may be slower in the serverless environment
+
+- **For Long-Term Storage**: If you need to store files permanently, consider implementing:
   - [Vercel Blob Storage](https://vercel.com/docs/storage/vercel-blob) (recommended)
     ```javascript
     import { put, list, del } from '@vercel/blob';
@@ -70,8 +83,6 @@ This project has been configured for deployment on Vercel. Follow these steps to
     ```
   - [Amazon S3](https://aws.amazon.com/s3/)
   - [Cloudinary](https://cloudinary.com/)
-
-- **API Routes**: The application has been modified to use Vercel's serverless functions. The API routes are located in the `/api` directory and currently return mock data. You'll need to update these to use your chosen storage solution.
 
 - **Database**: If your application requires a database, consider using:
   - [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) (easiest integration)
