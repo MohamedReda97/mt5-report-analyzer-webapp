@@ -5,7 +5,9 @@ import ReportTab from "@/components/ReportTab";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { getRandomColor } from "@/lib/utils";
+// Import both report utils implementations
 import { calculateMaxMetrics } from "@/lib/reportUtils";
+import { generateComparisonReport as generateComparisonReportVercel } from "@/lib/reportUtils-vercel";
 import { ReportFile, ParsedReport } from "@shared/schema";
 
 export default function Home() {
@@ -136,27 +138,8 @@ export default function Home() {
     setIsGenerating(true);
 
     try {
-      // Create FormData with all selected files
-      const formData = new FormData();
-      selectedFiles.forEach(fileObj => {
-        formData.append('reports', fileObj.file);
-      });
-
-      // Upload files and get parsed data
-      const response = await fetch('/api/reports/parse', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Server response:', response.status, errorText);
-        throw new Error(`Failed to parse reports: ${response.status} ${response.statusText}`);
-      }
-
-      // Get the parsed report data
-      const parsedData: ParsedReport[] = await response.json();
+      // Use the Vercel-specific implementation that processes files in the browser
+      const parsedData = await generateComparisonReportVercel(selectedFiles);
 
       // Check if any reports have errors
       const reportsWithErrors = parsedData.filter(report => report.metrics.error);
@@ -173,14 +156,6 @@ export default function Home() {
       const tabName = selectedFiles.map(file => file.name.replace('.html', '')).join(' | ');
       const tabId = `tab_${new Date().getTime()}`; // Unique ID
 
-      // Assign colors to each report
-      parsedData.forEach(report => {
-        report.color = getRandomColor();
-      });
-
-      // Calculate scores
-      calculateMaxMetrics(parsedData);
-
       // Create new tab
       setTabs(prev => ({
         ...prev,
@@ -194,11 +169,54 @@ export default function Home() {
       setActiveTabId(tabId);
     } catch (error) {
       console.error('Error parsing reports:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to generate the comparison report. Please try again.",
-        variant: "destructive",
-      });
+
+      // Try the fallback approach if the first one fails
+      try {
+        console.log("First approach failed, trying fallback method...");
+
+        // Create FormData with all selected files
+        const formData = new FormData();
+        selectedFiles.forEach(fileObj => {
+          formData.append('reports', fileObj.file);
+        });
+
+        // Upload files and get parsed data
+        const response = await fetch('/api/reports/parse', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to parse reports: ${response.status} ${response.statusText}`);
+        }
+
+        // Get the parsed report data
+        const parsedData = await response.json();
+
+        // Create tab name from selected files
+        const tabName = selectedFiles.map(file => file.name.replace('.html', '')).join(' | ');
+        const tabId = `tab_${new Date().getTime()}`; // Unique ID
+
+        // Create new tab
+        setTabs(prev => ({
+          ...prev,
+          [tabId]: {
+            name: tabName,
+            data: parsedData
+          }
+        }));
+
+        // Set as active tab
+        setActiveTabId(tabId);
+      } catch (fallbackError) {
+        console.error('Fallback method also failed:', fallbackError);
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to generate the comparison report. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsGenerating(false);
     }

@@ -60,11 +60,16 @@ This project has been configured for deployment on Vercel. Follow these steps to
 
 ### Important Notes for Production Deployment
 
-- **File Processing**: The application now processes HTML report files directly in the serverless functions using the formidable package. The files are parsed in memory and not stored permanently.
+- **Client-Side Processing**: The application now processes HTML report files directly in the browser using the FileReader API, then sends the content to the server for parsing. This approach is more reliable on Vercel's serverless environment.
+
+- **Dual Processing Approach**: The application implements two methods for processing reports:
+  1. **Primary Method**: Files are read in the browser and their content is sent to `/api/reports/parse-direct` for parsing
+  2. **Fallback Method**: If the primary method fails, the application falls back to the traditional file upload approach using `/api/reports/parse`
 
 - **API Routes**: The application has been modified to use Vercel's serverless functions. The API routes are located in the `/api` directory and now include:
   - `/api/reports/upload` - Handles file uploads
-  - `/api/reports/parse` - Parses uploaded HTML reports
+  - `/api/reports/parse` - Parses uploaded HTML reports (traditional approach)
+  - `/api/reports/parse-direct` - Parses HTML content sent directly from the browser
   - `/api/files/stats` - Returns file statistics
   - `/api/files/cleanup` - Handles file cleanup
 
