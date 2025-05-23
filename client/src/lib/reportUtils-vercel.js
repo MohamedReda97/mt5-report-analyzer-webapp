@@ -33,8 +33,8 @@ export async function generateComparisonReport(selectedFiles) {
       throw new Error('Too many files selected. Please select 10 or fewer files for better performance.');
     }
 
-    // Process files in batches if there are many
-    const batchSize = 3;
+    // Process files one by one to avoid payload size issues
+    const batchSize = 1; // Process one file at a time
     const results = [];
 
     // Process files in batches
@@ -44,9 +44,22 @@ export async function generateComparisonReport(selectedFiles) {
       // Read files directly in the browser
       const fileContents = await Promise.all(
         batch.map(async (fileObj) => {
+          const content = await readFileAsText(fileObj.file);
+
+          // Compress the content if it's too large
+          let processedContent = content;
+          if (content.length > 1000000) { // 1MB
+            // Remove unnecessary whitespace and newlines
+            processedContent = content
+              .replace(/\s+/g, ' ')
+              .replace(/>\s+</g, '><');
+
+            console.log(`Compressed file ${fileObj.name} from ${content.length} to ${processedContent.length} bytes`);
+          }
+
           return {
             name: fileObj.name,
-            content: await readFileAsText(fileObj.file)
+            content: processedContent
           };
         })
       );
@@ -66,6 +79,11 @@ export async function generateComparisonReport(selectedFiles) {
         if (response.status === 408) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Processing timed out. Try with fewer or smaller files.');
+        }
+
+        // Check for payload too large error
+        if (response.status === 413) {
+          throw new Error('File is too large to process. Please try a smaller file.');
         }
 
         const errorText = await response.text();

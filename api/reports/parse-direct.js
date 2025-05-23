@@ -19,11 +19,26 @@ function extractMetrics($, metricsDict) {
   let inputs = {};
 
   try {
+    // First, try to extract inputs directly from the HTML
+    // This is a more direct approach that doesn't rely on table structure
+    const htmlText = $.html();
+
+    // Look for input parameters in the HTML
+    const inputRegex = /([A-Za-z0-9_]+)\s*=\s*([^,;\n<>]+)/g;
+    let match;
+    while ((match = inputRegex.exec(htmlText)) !== null) {
+      const key = match[1].trim();
+      const value = match[2].trim();
+      if (key && value && key.length < 30 && !key.includes('<') && !key.includes('>')) {
+        inputs[key] = value;
+      }
+    }
+
     // Check if there are any tables in the document
     const tables = $("table");
     if (tables.length === 0) {
       console.error('No tables found in the HTML document');
-      return { metrics: { error: 'No tables found in the HTML document' }, inputs: {} };
+      return { metrics: { error: 'No tables found in the HTML document' }, inputs };
     }
 
     // Find the metrics table - usually the first table
@@ -40,7 +55,52 @@ function extractMetrics($, metricsDict) {
       }
     }
 
-    // Use a more targeted selector for rows
+    // Faster approach: Extract metrics directly using text search
+    const tableText = $(metricsTable).text();
+
+    // Process metrics dictionary
+    Object.entries(metricsDict).forEach(([key, matchPhrase]) => {
+      const phraseIndex = tableText.indexOf(matchPhrase);
+      if (phraseIndex !== -1) {
+        // Find the value after the phrase
+        const afterPhrase = tableText.substring(phraseIndex + matchPhrase.length, phraseIndex + matchPhrase.length + 50);
+        // Extract the first number or percentage
+        const valueMatch = afterPhrase.match(/[-+]?[0-9]*\.?[0-9]+%?/);
+        if (valueMatch) {
+          results[key] = valueMatch[0];
+        }
+      }
+    });
+
+    // If we found metrics this way, continue
+    if (Object.keys(results).length > 0) {
+      // Use a more targeted selector for rows only if we need more detailed extraction
+      const rows = metricsTable.find("tr");
+
+      // Extract inputs from rows if we haven't found enough
+      if (Object.keys(inputs).length < 3) {
+        rows.each((_, row) => {
+          const rowText = $(row).text();
+          if (rowText.includes("=")) {
+            const inputMatches = rowText.match(/([A-Za-z0-9_]+)\s*=\s*([^=]+)(?=\s+[A-Za-z0-9_]+=|$)/g);
+            if (inputMatches) {
+              inputMatches.forEach(match => {
+                const parts = match.split('=').map(part => part.trim());
+                if (parts.length === 2) {
+                  const key = parts[0].trim();
+                  const value = parts[1].trim();
+                  inputs[key] = value;
+                }
+              });
+            }
+          }
+        });
+      }
+
+      return { metrics: results, inputs };
+    }
+
+    // If the fast approach didn't work, fall back to the original method
     const rows = metricsTable.find("tr[align='right']");
 
     if (rows.length === 0) {
@@ -48,7 +108,7 @@ function extractMetrics($, metricsDict) {
       const allRows = metricsTable.find("tr");
       if (allRows.length === 0) {
         console.error('No rows found in the metrics table');
-        return { metrics: { error: 'No rows found in the metrics table' }, inputs: {} };
+        return { metrics: { error: 'No rows found in the metrics table' }, inputs };
       }
 
       // Process all rows to find metrics
@@ -69,11 +129,11 @@ function extractMetrics($, metricsDict) {
 
       // If we found metrics this way, return them
       if (Object.keys(results).length > 0) {
-        return { metrics: results, inputs: {} };
+        return { metrics: results, inputs };
       }
 
       console.error('Could not extract metrics using alternative method');
-      return { metrics: { error: 'Could not extract metrics' }, inputs: {} };
+      return { metrics: { error: 'Could not extract metrics' }, inputs };
     }
 
     let isInputsSection = false;
@@ -297,6 +357,13 @@ function parseReportContent(htmlContent, fileName) {
       }
     }
 
+    // Pre-process the HTML to make it more efficient to parse
+    // Remove comments, scripts, and styles
+    truncatedContent = truncatedContent
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+
     // Load the HTML into Cheerio with optimized options
     const $ = cheerio.load(truncatedContent, {
       normalizeWhitespace: true, // Normalize whitespace for better parsing
@@ -332,8 +399,62 @@ function parseReportContent(htmlContent, fileName) {
       "Average position holding time": "Average position holding time",
     };
 
-    // Extract metrics and inputs
-    const { metrics, inputs } = extractMetrics($, metricsDict);
+    // Extract metrics and inputs - use a timeout to prevent hanging
+    let extractionResult;
+    const extractionPromise = new Promise((resolve) => {
+      extractionResult = extractMetrics($, metricsDict);
+      resolve();
+    });
+
+    // Set a timeout for extraction
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => {
+        resolve();
+      }, 5000); // 5 second timeout for extraction
+    });
+
+    // Wait for extraction or timeout
+    await Promise.race([extractionPromise, timeoutPromise]);
+
+    // If extraction didn't complete, use a simpler approach
+    if (!extractionResult) {
+      extractionResult = {
+        metrics: { error: "Extraction timed out, using simplified approach" },
+        inputs: {}
+      };
+
+      // Try a simplified approach - direct text search
+      const htmlText = $.html();
+      Object.entries(metricsDict).forEach(([key, matchPhrase]) => {
+        const phraseIndex = htmlText.indexOf(matchPhrase);
+        if (phraseIndex !== -1) {
+          // Find the value after the phrase
+          const afterPhrase = htmlText.substring(phraseIndex + matchPhrase.length, phraseIndex + matchPhrase.length + 50);
+          // Extract the first number or percentage
+          const valueMatch = afterPhrase.match(/[-+]?[0-9]*\.?[0-9]+%?/);
+          if (valueMatch) {
+            extractionResult.metrics[key] = valueMatch[0];
+          }
+        }
+      });
+
+      // Extract inputs with a simple regex
+      const inputMatches = htmlText.match(/([A-Za-z0-9_]+)\s*=\s*([^,;\n<>]+)/g);
+      if (inputMatches) {
+        inputMatches.forEach(match => {
+          const parts = match.split('=').map(part => part.trim());
+          if (parts.length === 2) {
+            const key = parts[0].trim();
+            const value = parts[1].trim();
+            if (key && value && key.length < 30 && !key.includes('<') && !key.includes('>')) {
+              extractionResult.inputs[key] = value;
+            }
+          }
+        });
+      }
+    }
+
+    const { metrics, inputs } = extractionResult;
 
     // Add truncation warning if needed
     if (truncationWarning) {
@@ -344,7 +465,21 @@ function parseReportContent(htmlContent, fileName) {
     // This saves processing time for invalid files
     let deals = [];
     if (Object.keys(metrics).length > 2) { // More than just error and warning fields
-      deals = extractDeals($);
+      // Set a timeout for deals extraction
+      const dealsPromise = new Promise((resolve) => {
+        deals = extractDeals($);
+        resolve();
+      });
+
+      // Set a timeout for extraction
+      const dealsTimeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, 3000); // 3 second timeout for deals extraction
+      });
+
+      // Wait for extraction or timeout
+      await Promise.race([dealsPromise, dealsTimeoutPromise]);
     }
 
     // Return parsed data
@@ -458,38 +593,71 @@ export default async function handler(req, res) {
         return res.status(400).json({ message: 'No files provided' });
       }
 
+      // Check if the payload is too large
+      const totalSize = files.reduce((size, file) => size + (file.content ? file.content.length : 0), 0);
+      if (totalSize > 10000000) { // 10MB limit
+        return res.status(413).json({
+          message: 'Request payload too large. Try uploading smaller files or fewer files at once.',
+          error: 'Payload too large'
+        });
+      }
+
       // Set a timeout to ensure the function doesn't run too long
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Processing timed out')), 50000); // 50 second timeout
+        setTimeout(() => reject(new Error('Processing timed out')), 25000); // 25 second timeout
       });
 
-      // Parse files in parallel for better performance
-      const parsePromise = Promise.all(
-        files.map(async (file) => {
-          try {
-            // Parse the report
-            const report = parseReportContent(file.content, file.name);
+      // Process one file at a time for better reliability
+      const parsedReports = [];
 
-            // Add a random color
-            report.color = getRandomColor();
+      for (const file of files) {
+        try {
+          // Parse the report with a timeout
+          const parsePromise = new Promise(async (resolve) => {
+            try {
+              const report = await parseReportContent(file.content, file.name);
+              report.color = getRandomColor();
+              resolve(report);
+            } catch (err) {
+              resolve({
+                fileName: file.name,
+                color: getRandomColor(),
+                metrics: { error: `Failed to parse: ${err.message}` },
+                inputs: {},
+                deals: []
+              });
+            }
+          });
 
-            return report;
-          } catch (fileError) {
-            console.error(`Error parsing file ${file.name}:`, fileError);
-            // Return a placeholder for the failed file
-            return {
-              fileName: file.name,
-              color: getRandomColor(),
-              metrics: { error: `Failed to parse: ${fileError.message}` },
-              inputs: {},
-              deals: []
-            };
-          }
-        })
-      );
+          // Set a per-file timeout
+          const fileTimeoutPromise = new Promise((resolve) => {
+            setTimeout(() => {
+              resolve({
+                fileName: file.name,
+                color: getRandomColor(),
+                metrics: { error: 'File processing timed out' },
+                inputs: {},
+                deals: []
+              });
+            }, 10000); // 10 second timeout per file
+          });
 
-      // Race against timeout
-      const parsedReports = await Promise.race([parsePromise, timeoutPromise]);
+          // Race against timeout for this file
+          const report = await Promise.race([parsePromise, fileTimeoutPromise]);
+          parsedReports.push(report);
+
+        } catch (fileError) {
+          console.error(`Error parsing file ${file.name}:`, fileError);
+          // Add a placeholder for the failed file
+          parsedReports.push({
+            fileName: file.name,
+            color: getRandomColor(),
+            metrics: { error: `Failed to parse: ${fileError.message}` },
+            inputs: {},
+            deals: []
+          });
+        }
+      }
 
       if (parsedReports.length === 0) {
         throw new Error('All files failed to parse');
