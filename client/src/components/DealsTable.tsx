@@ -38,14 +38,19 @@ export default function DealsTable({ reports, tabId }: DealsTableProps) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  // Filter out rows without Symbol values and memoize the result
+  // Filter deals to show only "out" direction deals with valid Symbol values
   const filteredDeals = useMemo(() => {
     if (reports.length === 0 || activeReportIndex >= reports.length) {
       return [];
     }
 
     const deals = reports[activeReportIndex].deals || [];
-    return deals.filter(deal => deal.Symbol && deal.Symbol.trim() !== '');
+    return deals.filter(deal =>
+      // Keep only deals with valid Symbol values
+      deal.Symbol && deal.Symbol.trim() !== '' &&
+      // Keep only "out" direction deals as they have profit values
+      deal.Direction && deal.Direction.toLowerCase() === 'out'
+    );
   }, [reports, activeReportIndex]);
 
   // We'll define this after table initialization

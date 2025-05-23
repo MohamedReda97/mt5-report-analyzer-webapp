@@ -170,6 +170,28 @@ export default function Home() {
     } catch (error) {
       console.error('Error parsing reports:', error);
 
+      // Show a specific error message for too many files
+      if (error instanceof Error && error.message.includes('Too many files selected')) {
+        toast({
+          title: "Too Many Files",
+          description: error.message,
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+
+      // Show a specific error message for timeout
+      if (error instanceof Error && error.message.includes('Processing timed out')) {
+        toast({
+          title: "Processing Timeout",
+          description: "The files are too large or complex to process. Try with fewer or smaller files.",
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+
       // Try the fallback approach if the first one fails
       try {
         console.log("First approach failed, trying fallback method...");
