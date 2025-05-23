@@ -344,7 +344,7 @@ function parseReportContent(htmlContent, fileName) {
   try {
     // Check if the content is too large and potentially truncate it
     // This helps with memory usage and parsing speed
-    const maxContentLength = 5000000; // 5MB limit
+    const maxContentLength = 2000000; // 2MB limit - reduced for memory constraints
     let truncatedContent = htmlContent;
     let truncationWarning = '';
 
@@ -358,17 +358,87 @@ function parseReportContent(htmlContent, fileName) {
     }
 
     // Pre-process the HTML to make it more efficient to parse
-    // Remove comments, scripts, and styles
+    // Remove comments, scripts, styles, and unnecessary whitespace
     truncatedContent = truncatedContent
       .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+      .replace(/\s+/g, ' ')
+      .replace(/>\s+</g, '><');
 
-    // Load the HTML into Cheerio with optimized options
+    // For very large content, try a more memory-efficient approach first
+    if (truncatedContent.length > 1000000) { // 1MB
+      // Extract metrics and inputs directly using regex
+      const metrics = {};
+      const inputs = {};
+
+      // Define the metrics dictionary
+      const metricsDict = {
+        "Net Profit": "Total Net Profit",
+        "Max DD": "Equity Drawdown Maximal",
+        "Win Rate": "Profit Trades",
+        "Profit Factor": "Profit Factor",
+        "Recovery Factor": "Recovery Factor",
+        "Sharpe Ratio": "Sharpe Ratio",
+        "Z-Score": "Z-Score",
+        "EPO": "Expected Payoff",
+        "Trades": "Total Trades",
+        "GHPR": "GHPR",
+        "LRC": "LR Correlation",
+        "LRE": "LR Standard Error",
+        "LP": "Largest profit trade",
+        "LL": "Largest loss trade",
+        "AvgP": "Average profit trade",
+        "AvgL": "Average loss trade",
+        "AvgPn": "Average consecutive wins",
+        "AvgLn": "Average consecutive losses",
+        "Short Trades (won %)": "Short Trades",
+        "Long Trades (won %)": "Long Trades"
+      };
+
+      // Extract metrics using regex
+      Object.entries(metricsDict).forEach(([key, matchPhrase]) => {
+        const regex = new RegExp(matchPhrase + '[^\\d-]*([\\d.-]+%?)', 'i');
+        const match = truncatedContent.match(regex);
+        if (match && match[1]) {
+          metrics[key] = match[1].trim();
+        }
+      });
+
+      // Extract inputs using regex
+      const inputRegex = /([A-Za-z0-9_]+)\s*=\s*([^,;\n<>]+)/g;
+      let match;
+      while ((match = inputRegex.exec(truncatedContent)) !== null) {
+        const key = match[1].trim();
+        const value = match[2].trim();
+        if (key && value && key.length < 30 && !key.includes('<') && !key.includes('>')) {
+          inputs[key] = value;
+        }
+      }
+
+      // If we found enough metrics, return them without using Cheerio
+      if (Object.keys(metrics).length >= 5) {
+        if (truncationWarning) {
+          metrics.warning = truncationWarning;
+        }
+
+        return {
+          fileName: fileName,
+          metrics,
+          inputs,
+          deals: [] // Skip deals for very large files to save memory
+        };
+      }
+    }
+
+    // If the regex approach didn't work well enough, fall back to Cheerio
+    // but with minimal options to save memory
     const $ = cheerio.load(truncatedContent, {
-      normalizeWhitespace: true, // Normalize whitespace for better parsing
-      decodeEntities: true,      // Decode HTML entities
-      xmlMode: false,            // Not XML mode for better HTML parsing
+      normalizeWhitespace: true,
+      decodeEntities: false, // Save memory
+      xmlMode: false,
+      lowerCaseTags: true,   // Save memory
+      lowerCaseAttributeNames: true // Save memory
     });
 
     // Metrics dictionary for matching
@@ -595,7 +665,7 @@ export default async function handler(req, res) {
 
       // Check if the payload is too large
       const totalSize = files.reduce((size, file) => size + (file.content ? file.content.length : 0), 0);
-      if (totalSize > 10000000) { // 10MB limit
+      if (totalSize > 5000000) { // 5MB limit - reduced for memory constraints
         return res.status(413).json({
           message: 'Request payload too large. Try uploading smaller files or fewer files at once.',
           error: 'Payload too large'
@@ -604,19 +674,46 @@ export default async function handler(req, res) {
 
       // Set a timeout to ensure the function doesn't run too long
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Processing timed out')), 25000); // 25 second timeout
+        setTimeout(() => reject(new Error('Processing timed out')), 20000); // 20 second timeout
       });
 
       // Process one file at a time for better reliability
       const parsedReports = [];
 
-      for (const file of files) {
+      // Limit to processing at most 3 files at once to save memory
+      const maxFiles = Math.min(files.length, 3);
+
+      for (let i = 0; i < maxFiles; i++) {
+        const file = files[i];
+
         try {
+          // Free up memory before processing each file
+          if (global.gc) {
+            global.gc();
+          }
+
           // Parse the report with a timeout
           const parsePromise = new Promise(async (resolve) => {
             try {
-              const report = await parseReportContent(file.content, file.name);
+              // Clean up the content to save memory
+              let cleanedContent = file.content;
+
+              // For large files, remove unnecessary parts before parsing
+              if (cleanedContent.length > 500000) {
+                cleanedContent = cleanedContent
+                  .replace(/<!--[\s\S]*?-->/g, '')
+                  .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                  .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+                  .replace(/\s+/g, ' ')
+                  .replace(/>\s+</g, '><');
+              }
+
+              const report = await parseReportContent(cleanedContent, file.name);
               report.color = getRandomColor();
+
+              // Clean up to save memory
+              cleanedContent = null;
+
               resolve(report);
             } catch (err) {
               resolve({
@@ -639,12 +736,25 @@ export default async function handler(req, res) {
                 inputs: {},
                 deals: []
               });
-            }, 10000); // 10 second timeout per file
+            }, 8000); // 8 second timeout per file
           });
 
           // Race against timeout for this file
           const report = await Promise.race([parsePromise, fileTimeoutPromise]);
           parsedReports.push(report);
+
+          // If we have more files than we can process, add a message
+          if (files.length > maxFiles && i === maxFiles - 1) {
+            parsedReports.push({
+              fileName: "Note",
+              color: "#cccccc",
+              metrics: {
+                message: `Only processed ${maxFiles} of ${files.length} files to stay within memory limits. Please process remaining files separately.`
+              },
+              inputs: {},
+              deals: []
+            });
+          }
 
         } catch (fileError) {
           console.error(`Error parsing file ${file.name}:`, fileError);

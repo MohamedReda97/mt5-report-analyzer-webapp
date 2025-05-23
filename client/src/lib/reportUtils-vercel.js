@@ -29,16 +29,17 @@ export async function uploadReportFile(file) {
 export async function generateComparisonReport(selectedFiles) {
   try {
     // Check if we have too many files
-    if (selectedFiles.length > 10) {
-      throw new Error('Too many files selected. Please select 10 or fewer files for better performance.');
+    if (selectedFiles.length > 5) {
+      throw new Error('Too many files selected. Please select 5 or fewer files for better performance.');
     }
 
-    // Process files one by one to avoid payload size issues
-    const batchSize = 1; // Process one file at a time
+    // Process files in small batches to avoid memory issues
+    const maxBatchSize = 3; // Process at most 3 files at once
+    const batchSize = Math.min(selectedFiles.length, maxBatchSize);
     const results = [];
 
     // Process files in batches
-    for (let i = 0; i < selectedFiles.length; i += batchSize) {
+    for (let i = 0; i < Math.min(selectedFiles.length, maxBatchSize); i += batchSize) {
       const batch = selectedFiles.slice(i, i + batchSize);
 
       // Read files directly in the browser
@@ -46,15 +47,29 @@ export async function generateComparisonReport(selectedFiles) {
         batch.map(async (fileObj) => {
           const content = await readFileAsText(fileObj.file);
 
-          // Compress the content if it's too large
+          // Compress the content to reduce payload size
           let processedContent = content;
-          if (content.length > 1000000) { // 1MB
-            // Remove unnecessary whitespace and newlines
-            processedContent = content
-              .replace(/\s+/g, ' ')
-              .replace(/>\s+</g, '><');
 
-            console.log(`Compressed file ${fileObj.name} from ${content.length} to ${processedContent.length} bytes`);
+          // Always compress to reduce server memory usage
+          // Remove comments, scripts, styles, and unnecessary whitespace
+          processedContent = content
+            .replace(/<!--[\s\S]*?-->/g, '')
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+            .replace(/\s+/g, ' ')
+            .replace(/>\s+</g, '><');
+
+          console.log(`Compressed file ${fileObj.name} from ${content.length} to ${processedContent.length} bytes`);
+
+          // If still too large, truncate
+          const maxSize = 1500000; // 1.5MB max
+          if (processedContent.length > maxSize) {
+            // Find the last complete table before the size limit
+            const lastTableEndIndex = processedContent.lastIndexOf('</table>', maxSize);
+            if (lastTableEndIndex !== -1) {
+              processedContent = processedContent.substring(0, lastTableEndIndex + 8); // Include the closing </table> tag
+              console.log(`Truncated file ${fileObj.name} to ${processedContent.length} bytes`);
+            }
           }
 
           return {
@@ -83,7 +98,7 @@ export async function generateComparisonReport(selectedFiles) {
 
         // Check for payload too large error
         if (response.status === 413) {
-          throw new Error('File is too large to process. Please try a smaller file.');
+          throw new Error('File is too large to process. Please try a smaller file or process files one at a time.');
         }
 
         const errorText = await response.text();
